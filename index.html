@@ -379,24 +379,28 @@ setupColorBlindMode();
 
 Array.prototype.forEach.call(document.querySelectorAll('.toggle-help'), function(el, i) {
    el.addEventListener('click', function (e) {
+      e.preventDefault();
       $body.classList.toggle('show-help');
    })
 });
 
 Array.prototype.forEach.call(document.querySelectorAll('.toggle-result'), function(el, i) {
    el.addEventListener('click', function (e) {
+      e.preventDefault();
       $body.classList.toggle('show-result');
    })
 });
 
 Array.prototype.forEach.call(document.querySelectorAll('.toggle-settings'), function(el, i) {
    el.addEventListener('click', function (e) {
+      e.preventDefault();
       $body.classList.toggle('show-settings');
    })
 });
 
 Array.prototype.forEach.call(document.querySelectorAll('.toggle-colorblind-mode'), function(el, i) {
    el.addEventListener('click', function(e) {
+      e.preventDefault();
       colorBlindMode = (colorBlindMode == '1' ? '0' : '1');
       localStorage.setItem('colorBlindMode', colorBlindMode);
       setupColorBlindMode();
@@ -406,6 +410,7 @@ Array.prototype.forEach.call(document.querySelectorAll('.toggle-colorblind-mode'
 // If a result box is clicked, show it in a modal
 Array.prototype.forEach.call(document.querySelectorAll('.result'), function(el, i) {
    el.addEventListener('click', function (e) {
+      e.preventDefault();
       var tgt = e.target;
       var title = tgt.getAttribute('title');
       if (title != null) {
@@ -432,6 +437,8 @@ Array.prototype.forEach.call(document.querySelectorAll('#keyboard .cell'), funct
 
    // Add click event handlers for all the buttons
    el.addEventListener('click', function (e) {
+
+      e.preventDefault();
 
       var id = e.target.id;
 
