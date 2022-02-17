@@ -80,7 +80,13 @@ header h1 {
 }
 header .toggle-settings { position: absolute; top: 10px; left: 10px; cursor: pointer; }
 header .toggle-help { position: absolute; top: 10px; right: 10px; cursor: pointer; }
-
+footer {
+   position: absolute; 
+   bottom: 0;
+   width: 100%;
+   line-height: 50px;
+   text-align: center;
+}
 body.show-settings #settings { display: block; }
 body.show-help #help { display: block; }
 body.show-victory #victory { display: block; }
@@ -541,5 +547,7 @@ Array.prototype.forEach.call(document.querySelectorAll('#keyboard .cell'), funct
 });
 
 </script>
+
+<footer>&copy; 2022 Thom Wetzel / <a href="http://lmnopc.com/">LMNOpc</a></footer>
 </body>
 </html>
