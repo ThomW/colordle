@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=450, initial-scale=1, user-scalable=no">
 <title>Colordle</title>
 <style>
-html, 
+html,
 body {
    width: 100%;
    height: 100%;
@@ -37,6 +37,8 @@ body {
    font-weight: bold;
    margin: 5px;
 }
+.result { width: 130px; }
+.result-circle { margin-right: 5px; }
 #enter, #delete {
    background-color: black;
    font-size: 20px;
@@ -83,10 +85,12 @@ body.show-settings #settings { display: block; }
 body.show-help #help { display: block; }
 body.show-victory #victory { display: block; }
 body.show-oof #oof { display: block; }
+body.show-result #result { display: block; }
 
 body.show-settings #dialog-overlay
 , body.show-help #dialog-overlay
 , body.show-victory #dialog-overlay
+, body.show-result #dialog-overlay
 , body.show-oof #dialog-overlay { display: block; }
 
 #dialog-overlay {
@@ -117,12 +121,17 @@ body.show-settings #dialog-overlay
    margin-top: 0;
 }
 .close-btn {
-   position: absolute;
-   top: 20px;
-   right: 20px;
    font-weight: bold;
-   color: silver;
    cursor: pointer;
+   background-color: black;
+   color: white;
+   padding: 10px;
+   border-radius: 5px;
+   float: right;
+}
+/* Prevent svgs from swallowing clicks */
+svg {
+  pointer-events: none;
 }
 
 /* Switch CSS from https://www.w3schools.com/howto/howto_css_switch.asp */
@@ -229,18 +238,15 @@ input:checked + .slider:before {
    var seed = xmur3('' + getUTC());
    var rand = mulberry32(seed());
 
+   var svgOpenCircle = '<svg class="result-circle" width="15" height="15" version="1.1" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><path d="m50.004 99c-27.062 0.001416-49.001-21.934-49.004-48.995-0.0028344-27.061 21.932-49.001 48.994-49.005 27.062-0.0042517 49.003 21.929 49.006 48.995 0.00283 27.066-21.934 49.004-48.996 49.005z" fill="none" stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" style="paint-order:fill markers stroke"/></svg>';
+   var svgFilledCircle = '<svg class="result-circle" width="15" height="15" version="1.1" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><path d="m50.004 99c-27.062 0.001416-49.001-21.934-49.004-48.995-0.0028344-27.061 21.932-49.001 48.994-49.005 27.062-0.0042517 49.003 21.929 49.006 48.995 0.00283 27.066-21.934 49.004-48.996 49.005z" stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" style="paint-order:fill markers stroke"/></svg>';
+
 </script>
 </head>
 <body>
    <div id="dialog-overlay"></div>
    <header>
-      <a class="toggle-settings"><svg width="30" height="30" version="1.1" viewBox="0 0 26.458 26.458" xmlns="http://www.w3.org/2000/svg">
-         <g transform="translate(-24.793 -16.473)">
-          <path d="m36.491 16.473c-0.61442 0-1.1091 0.51803-1.1091 1.1617v2.73c0 0.75896-1.5608 1.4025-2.0975 0.86582l-1.9286-1.9286c-0.45515-0.45514-1.1711-0.47166-1.6055-0.03722l-2.1655 2.1655c-0.43446 0.43445-0.41794 1.1504 0.03722 1.6055l1.9286 1.9286c0.53668 0.53666-0.10687 2.0974-0.86585 2.0974h-2.7301c-0.64368 0-1.1617 0.49464-1.1617 1.109v3.063c0 0.6144 0.51805 1.109 1.1617 1.109h2.7301c0.7587 0 1.4023 1.56 0.86585 2.0965l-1.9286 1.9286c-0.45515 0.45514-0.47168 1.171-0.03722 1.6055l2.1655 2.1655c0.43446 0.43445 1.1504 0.41793 1.6055-0.03721l1.9286-1.9286c0.53668-0.53666 2.0975 0.10687 2.0975 0.86582v2.73c0 0.64366 0.49466 1.1626 1.1091 1.1626h3.0631c0.61442 0 1.1082-0.51894 1.1082-1.1626v-2.73c0-0.75896 1.5608-1.4025 2.0975-0.86582l1.9286 1.9286c0.45515 0.45514 1.1711 0.47166 1.6055 0.03721l2.1655-2.1655c0.43446-0.43445 0.41794-1.1504-0.03722-1.6055l-1.9286-1.9286c-0.53648-0.53646 0.10715-2.0965 0.86585-2.0965h2.7301c0.64368 0 1.1617-0.49464 1.1617-1.109v-3.063c-4e-6 -0.6144-0.51805-1.109-1.1617-1.109h-2.7246c-0.76002 0-1.4069-1.5618-0.86948-2.0992l1.9268-1.9268c0.45515-0.45514 0.47168-1.171 0.03722-1.6055l-2.1655-2.1655c-0.43446-0.43445-1.1504-0.41792-1.6055 0.03722l-1.9268 1.9268c-0.53741 0.5374-2.0993-0.10947-2.0993-0.86945v-2.7245c0-0.64366-0.49376-1.1617-1.1082-1.1617zm6.4426 13.229a4.9115 4.9114 0 0 1-4.9115 4.9114 4.9115 4.9114 0 0 1-4.9115-4.9114 4.9115 4.9114 0 0 1 4.9115-4.9114 4.9115 4.9114 0 0 1 4.9115 4.9114z" stroke-miterlimit="2" stroke-width="0"/>
-         </g>
-         </svg>
-         </a>
-      <h1>Colordle?</h1>
+      <h1>Colordle</h1>
       <a class="toggle-help"><svg width="30" height="30" version="1.1" viewBox="0 0 26.458 26.458" xmlns="http://www.w3.org/2000/svg">
          <g transform="translate(-24.793 -16.473)" stroke-miterlimit="2" stroke-width="0">
           <path d="m45.753 46.904c-0.61442 0-1.1091 0.51803-1.1091 1.1617v2.73c0 0.75896-1.5608 1.4025-2.0975 0.86582l-1.9286-1.9286c-0.45515-0.45514-1.1711-0.47166-1.6055-0.03722l-2.1655 2.1655c-0.43446 0.43445-0.41794 1.1504 0.03722 1.6055l1.9286 1.9286c0.53668 0.53666-0.10687 2.0974-0.86585 2.0974h-2.7301c-0.64368 0-1.1617 0.49464-1.1617 1.109v3.063c0 0.6144 0.51805 1.109 1.1617 1.109h2.7301c0.7587 0 1.4023 1.56 0.86585 2.0965l-1.9286 1.9286c-0.45515 0.45514-0.47168 1.171-0.03722 1.6055l2.1655 2.1655c0.43446 0.43445 1.1504 0.41793 1.6055-0.03721l1.9286-1.9286c0.53668-0.53666 2.0975 0.10687 2.0975 0.86582v2.73c0 0.64366 0.49466 1.1626 1.1091 1.1626h3.0631c0.61442 0 1.1082-0.51894 1.1082-1.1626v-2.73c0-0.75896 1.5608-1.4025 2.0975-0.86582l1.9286 1.9286c0.45515 0.45514 1.1711 0.47166 1.6055 0.03721l2.1655-2.1655c0.43446-0.43445 0.41794-1.1504-0.03722-1.6055l-1.9286-1.9286c-0.53648-0.53646 0.10715-2.0965 0.86585-2.0965h2.7301c0.64368 0 1.1617-0.49464 1.1617-1.109v-3.063c-4e-6 -0.6144-0.51805-1.109-1.1617-1.109h-2.7246c-0.76002 0-1.4069-1.5618-0.86948-2.0992l1.9268-1.9268c0.45515-0.45514 0.47168-1.171 0.03722-1.6055l-2.1655-2.1655c-0.43446-0.43445-1.1504-0.41792-1.6055 0.03722l-1.9268 1.9268c-0.53741 0.5374-2.0993-0.10947-2.0993-0.86945v-2.7245c0-0.64366-0.49376-1.1617-1.1082-1.1617zm6.4426 13.229a4.9115 4.9114 0 0 1-4.9115 4.9114 4.9115 4.9114 0 0 1-4.9115-4.9114 4.9115 4.9114 0 0 1 4.9115-4.9114 4.9115 4.9114 0 0 1 4.9115 4.9114z"/>
@@ -266,24 +272,32 @@ input:checked + .slider:before {
       </div>
    </div>
 
-   <div id="settings" class="dialog">
-      <a class="toggle-settings close-btn">&#x2715;</a> 
-      <h2>Settings</h2>
-      <div>
-         Colorblind Mode
-         <label class="switch">
-           <input type="checkbox" id="toggle-colorblind-mode">
-           <span class="slider round"></span>
+   <div id="help" class="dialog">
+
+      <h2>How to play</h2>
+      <p>Guess the combination of colors in less than 10 guesses. If you've ever played Mastermind, you've played this.</p>
+      <p>Select a row of colors and hit ENTER. You'll see a patttern that tells you how close your guess is.</p>
+      <p><script>document.write(svgFilledCircle)</script> : Correct color in the right place</p>
+      <p><script>document.write(svgOpenCircle)</script> : Correct color, incorrect place</p>
+      <p>Unlike Wordle, the location of the indicators don't correspond to where the colors fall in the solution.</p>
+
+      <div class="row" style="overflow: auto; margin-left: 30px;">
+         <div class="cell value-0"></div>
+         <div class="cell value-1"></div>
+         <div class="cell value-2"></div>
+         <div class="cell value-3"></div>
+         <div class="cell value-4"></div>
+      </div>
+
+      <div style="overflow: auto; margin: 15px 0;">
+         <h3 style="float:left; margin: 0; line-height: 34px;">Colorblind Mode</h3>
+         <label class="switch" style="float: right;">
+            <input type="checkbox" class="toggle-colorblind-mode">
+            <span class="slider round"></span>
          </label>
       </div>
-   </div>
-
-   <div id="help" class="dialog">
-      <a class="toggle-help close-btn">&#x2715;</a> 
-      <h2>How to play</h2>
-      <p>Select a row of colors and hit ENTER. You'll see a patttern that tells you how close your guess is.</p>
-      <p>&#11044; : Correct color in the right place</p>
-      <p>&#11096; : Correct color, incorrect place</p>
+      
+      <a class="toggle-help close-btn">Close</a>
    </div>
 
    <div id="victory" class="dialog">
@@ -294,6 +308,13 @@ input:checked + .slider:before {
    <div id="oof" class="dialog">
       <h2>OUT OF GUESSES</h2>
       <p>You're all out of guesses for today! Better luck tomorrow.  :)</p>
+   </div>
+
+   <div id="result" class="dialog">
+      <div id="result-dots">HELLO WORLD</div>
+      <br />
+      <div id="result-title">OOPS!</div>
+      <a class="toggle-result close-btn">Close</a>
    </div>
 
 <script type="text/javascript">
@@ -321,7 +342,15 @@ var charPartlyCorrect = '&#11096;';
 var colorBlindShapes = ['&#9733;', '&clubs;', '&hearts;', '&diams;', '&spades;'];
 var colorBlindMode = localStorage.getItem("colorBlindMode") == '1';
 
+var numbersToWords = ['Zero', 'One', 'Two', 'Three', 'Four', 'Five'];
+
 var $body = document.querySelector('body');
+
+var firstRun = localStorage.getItem('firstTimer') == null ? true : false;
+if (firstRun) {
+   $body.classList.toggle('show-help');
+   localStorage.setItem('firstTimer', '0');
+}
 
 function setupColorBlindMode() {
 
@@ -331,8 +360,10 @@ function setupColorBlindMode() {
       $body.classList.remove('colorBlindMode');
    }
 
-   // Make sure that the colorblind mode toggle is displayed correctly
-   document.querySelector('#toggle-colorblind-mode').checked = (colorBlindMode == '1');
+   // Make sure that the colorblind mode toggles are displayed correctly
+   Array.prototype.forEach.call(document.querySelectorAll('.toggle-colorblind-mode'), function(el, i) {
+      el.checked = (colorBlindMode == '1');
+   });
 }
 
 setupColorBlindMode();
@@ -343,20 +374,47 @@ Array.prototype.forEach.call(document.querySelectorAll('.toggle-help'), function
    })
 });
 
+Array.prototype.forEach.call(document.querySelectorAll('.toggle-result'), function(el, i) {
+   el.addEventListener('click', function (e) {
+      $body.classList.toggle('show-result');
+   })
+});
+
 Array.prototype.forEach.call(document.querySelectorAll('.toggle-settings'), function(el, i) {
    el.addEventListener('click', function (e) {
       $body.classList.toggle('show-settings');
    })
 });
 
-document.querySelector('#toggle-colorblind-mode').addEventListener('click', function(e) {
-   colorBlindMode = (colorBlindMode == '1' ? '0' : '1');
-   localStorage.setItem('colorBlindMode', colorBlindMode);
-   setupColorBlindMode();
+Array.prototype.forEach.call(document.querySelectorAll('.toggle-colorblind-mode'), function(el, i) {
+   el.addEventListener('click', function(e) {
+      colorBlindMode = (colorBlindMode == '1' ? '0' : '1');
+      localStorage.setItem('colorBlindMode', colorBlindMode);
+      setupColorBlindMode();
+   });
 });
 
-var keys = document.querySelectorAll('#keyboard .cell');
-Array.prototype.forEach.call(keys, function(el, i) {
+// If a result box is clicked, show it in a modal
+Array.prototype.forEach.call(document.querySelectorAll('.result'), function(el, i) {
+   el.addEventListener('click', function (e) {
+      var tgt = e.target;
+      var title = tgt.getAttribute('title');
+      if (title != null) {
+         document.querySelector('#result-dots').innerHTML = tgt.innerHTML;
+         document.querySelector('#result-title').innerHTML = title;
+         $body.classList.toggle('show-result');
+      }
+   }, true);
+});
+
+// Set the shapes for the help dialog's cells
+Array.prototype.forEach.call(document.querySelectorAll('#help .cell'), function(el, i) {
+   if (i < colorBlindShapes.length) {
+      el.innerHTML = colorBlindShapes[i];
+   }
+});
+
+Array.prototype.forEach.call(document.querySelectorAll('#keyboard .cell'), function(el, i) {
 
    // Set this key's color blind shape
    if (i < colorBlindShapes.length) {
@@ -424,7 +482,33 @@ Array.prototype.forEach.call(keys, function(el, i) {
             }
 
             // Write the circles to show the result
-            document.querySelector('#result-' + activeRow).innerHTML = charCorrect.repeat(numCorrect) + charPartlyCorrect.repeat(numPartlyCorrect);
+            var $result = document.querySelector('#result-' + activeRow);
+            $result.innerHTML = svgFilledCircle.repeat(numCorrect) + svgOpenCircle.repeat(numPartlyCorrect);
+            
+            var title = '';
+            if (numCorrect == 0 && numPartlyCorrect == 0) {
+               title = 'None of the colors are correct';
+            }
+            else {
+               if (numCorrect == 1) {
+                  title += 'One color is in the correct position'; 
+               } else if (numCorrect > 0) {
+                  title += numbersToWords[numCorrect] + ' correct colors in the correct positions ';
+               }
+
+               // Do we need a line break?
+               if (numCorrect > 0 && numPartlyCorrect > 0) {
+                  title += '\n';
+               }
+
+               if (numPartlyCorrect == 1) {
+                  title += 'One color is correct, but in the wrong position';
+               } else if (numPartlyCorrect > 0) {
+                  title += numbersToWords[numPartlyCorrect] + ' colors are correct, but in the wrong positions';
+               }
+            }
+            
+            $result.setAttribute('title', title);
 
             // Start kicking the user to the next row and reset the column
             activeRow += 1;
