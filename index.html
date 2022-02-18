@@ -400,7 +400,6 @@ Array.prototype.forEach.call(document.querySelectorAll('.toggle-settings'), func
 
 Array.prototype.forEach.call(document.querySelectorAll('.toggle-colorblind-mode'), function(el, i) {
    el.addEventListener('click', function(e) {
-      e.preventDefault();
       colorBlindMode = (colorBlindMode == '1' ? '0' : '1');
       localStorage.setItem('colorBlindMode', colorBlindMode);
       setupColorBlindMode();
