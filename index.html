@@ -41,8 +41,12 @@ body {
    text-align: center;
    font-weight: bold;
    margin: 5px;
+   cursor: default;
 }
-.result { width: 130px; }
+.result {
+   width: 130px;
+   cursor: pointer;
+}
 .result-circle { margin-right: 5px; }
 #enter, #delete {
    background-color: black;
@@ -94,12 +98,14 @@ body.show-help #help { display: block; }
 body.show-victory #victory { display: block; }
 body.show-oof #oof { display: block; }
 body.show-result #result { display: block; }
+body.show-post-game #post-game { display: block; }
 
 body.show-settings #dialog-overlay
 , body.show-help #dialog-overlay
 , body.show-victory #dialog-overlay
 , body.show-result #dialog-overlay
-, body.show-oof #dialog-overlay { display: block; }
+, body.show-oof #dialog-overlay 
+, body.show-post-game #dialog-overlay { display: block; }
 
 #dialog-overlay {
    display: none;
@@ -129,7 +135,7 @@ body.show-settings #dialog-overlay
 .dialog h2 {
    margin-top: 0;
 }
-.close-btn {
+.btn {
    font-weight: bold;
    cursor: pointer;
    background-color: black;
@@ -306,7 +312,7 @@ input:checked + .slider:before {
          </label>
       </div>
       
-      <a class="toggle-help close-btn">Close</a>
+      <a class="toggle-help btn">Close</a>
    </div>
 
    <div id="victory" class="dialog">
@@ -319,11 +325,17 @@ input:checked + .slider:before {
       <p>You're all out of guesses for today! Better luck tomorrow.  :)</p>
    </div>
 
+   <div id="post-game" class="dialog">
+      <h2 id="post-game-title">TITLE</h2>
+      <div id="post-game-summary"></div>
+      <div id="share-btn" class="btn">Share</div>
+   </div>
+
    <div id="result" class="dialog">
       <div id="result-dots">HELLO WORLD</div>
       <br />
       <div id="result-title">OOPS!</div>
-      <a class="toggle-result close-btn">Close</a>
+      <a class="toggle-result btn">Close</a>
    </div>
 
 <script type="text/javascript">
@@ -377,6 +389,27 @@ function setupColorBlindMode() {
 
 setupColorBlindMode();
 
+function showPostGameDialog(title) {
+   
+   /*
+      <div id="post-game" class="dialog">
+      <h2 id="post-game-title">TITLE</h2>
+      <div id="post-game-summary"></div>
+      <div id="share-btn" class="btn">Share</div>
+      </div>
+   */
+
+   document.querySelector('#post-game-title').innerHTML = title;
+   
+   // Calculate the result dots using the game data to show the user
+   var dots = '';
+
+   document.querySelector('#post-game-summary').innerHTML = dots;
+   
+   $body.classList.toggle('show-post-game');
+}
+
+
 Array.prototype.forEach.call(document.querySelectorAll('.toggle-help'), function(el, i) {
    el.addEventListener('click', function (e) {
       e.preventDefault();
@@ -414,7 +447,7 @@ Array.prototype.forEach.call(document.querySelectorAll('.result'), function(el, 
       var title = tgt.getAttribute('title');
       if (title != null) {
          document.querySelector('#result-dots').innerHTML = tgt.innerHTML;
-         document.querySelector('#result-title').innerHTML = title;
+         document.querySelector('#result-title').innerHTML = title.replace('\n', '<br /><br />');
          $body.classList.toggle('show-result');
       }
    }, true);
