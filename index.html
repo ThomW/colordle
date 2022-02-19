@@ -255,7 +255,8 @@ input:checked + .slider:before {
 
    var svgOpenCircle = '<svg class="result-circle" width="15" height="15" version="1.1" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><path d="m50.004 99c-27.062 0.001416-49.001-21.934-49.004-48.995-0.0028344-27.061 21.932-49.001 48.994-49.005 27.062-0.0042517 49.003 21.929 49.006 48.995 0.00283 27.066-21.934 49.004-48.996 49.005z" fill="none" stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" style="paint-order:fill markers stroke"/></svg>';
    var svgFilledCircle = '<svg class="result-circle" width="15" height="15" version="1.1" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><path d="m50.004 99c-27.062 0.001416-49.001-21.934-49.004-48.995-0.0028344-27.061 21.932-49.001 48.994-49.005 27.062-0.0042517 49.003 21.929 49.006 48.995 0.00283 27.066-21.934 49.004-48.996 49.005z" stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" style="paint-order:fill markers stroke"/></svg>';
-
+   var svgWrong = '<svg class="result-circle" width="15" height="15" version="1.1" viewBox="0 0 3.9688 3.9688" xmlns="http://www.w3.org/2000/svg"><path d="m3.4911 0-1.5068 1.5068-1.5068-1.5068-0.47761 0.47761 1.5068 1.5068-1.5068 1.5068 0.47761 0.47761 1.5068-1.5068 1.5068 1.5068 0.47761-0.47761-1.5068-1.5068 1.5068-1.5068z" fill="#ff1b0d" stroke-miterlimit="2" stroke-width="0"/></svg>';
+   
 </script>
 </head>
 <body>
@@ -531,13 +532,18 @@ Array.prototype.forEach.call(document.querySelectorAll('#keyboard .cell'), funct
 
             // Write the circles to show the result
             var $result = document.querySelector('#result-' + activeRow);
-            $result.innerHTML = svgFilledCircle.repeat(numCorrect) + svgOpenCircle.repeat(numPartlyCorrect);
             
             var title = '';
             if (numCorrect == 0 && numPartlyCorrect == 0) {
+
+               $result.innerHTML = svgWrong;
+
                title = 'None of the colors are correct';
             }
             else {
+
+               $result.innerHTML = svgFilledCircle.repeat(numCorrect) + svgOpenCircle.repeat(numPartlyCorrect);
+
                if (numCorrect == 1) {
                   title += 'One color is in the correct position'; 
                } else if (numCorrect > 0) {
