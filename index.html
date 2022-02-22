@@ -21,6 +21,14 @@ body {
    position: relative;
    text-align: center;
 }
+#post-game-clipboard {
+   position: absolute;
+   width: 1px;
+   height: 1px;
+   border: none;
+   left: -1000px;
+}
+
 #game {
    position: relative;
    overflow: auto;
@@ -46,6 +54,7 @@ body {
 .result {
    width: 130px;
    cursor: pointer;
+   font-size: 17px;
 }
 .result-circle { margin-right: 5px; }
 #enter, #delete {
@@ -210,57 +219,68 @@ input:checked + .slider:before {
 .slider.round:before {
   border-radius: 50%;
 }
-
 </style>
 <script type="text/javascript">
 
-   /*
-   These functions help me get a predictable set of 
-   random numbers so that all players get the same
-   puzzles
-   */
-   function xmur3(str) {
-      for(var i = 0, h = 1779033703 ^ str.length; i < str.length; i++) {
-         h = Math.imul(h ^ str.charCodeAt(i), 3432918353);
-         h = h << 13 | h >>> 19;
-      } return function() {
-         h = Math.imul(h ^ (h >>> 16), 2246822507);
-         h = Math.imul(h ^ (h >>> 13), 3266489909);
-         return (h ^= h >>> 16) >>> 0;
-      }
-   }
-   
-   function mulberry32(a) {
-      return function() {
-        var t = a += 0x6D2B79F5;
-        t = Math.imul(t ^ t >>> 15, t | 1);
-        t ^= t + Math.imul(t ^ t >>> 7, t | 61);
-        return ((t ^ t >>> 14) >>> 0) / 4294967296;
-      }
-   }
-   
-   function randInt(min = 0, max = 5) {
-      return Math.floor((rand() * max) + min);
-   }
+   // I know I'm doing this wrong, but since I don't have any server-side stuff to kick the
+   // emojis into the markup, I'm going to just do some document.writes to keep the HTML
+   // as simple as I can... 
 
-   // Get GMT 'formatted' as yyyy-m-d
-   function getUTC() {
-      var tDate = new Date();
-      var utc = tDate.getUTCFullYear() + '-' + tDate.getUTCMonth() + '-' + tDate.getUTCDate();
-      return utc;
-   }
-   
-   var seed = xmur3('' + getUTC());
-   var rand = mulberry32(seed());
+   var charOpenCircle = '⚪';
+   var charFilledCircle = '⚫';
+   var charWrong = '❌';
 
-   var svgOpenCircle = '<svg class="result-circle" width="15" height="15" version="1.1" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><path d="m50.004 99c-27.062 0.001416-49.001-21.934-49.004-48.995-0.0028344-27.061 21.932-49.001 48.994-49.005 27.062-0.0042517 49.003 21.929 49.006 48.995 0.00283 27.066-21.934 49.004-48.996 49.005z" fill="none" stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" style="paint-order:fill markers stroke"/></svg>';
-   var svgFilledCircle = '<svg class="result-circle" width="15" height="15" version="1.1" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><path d="m50.004 99c-27.062 0.001416-49.001-21.934-49.004-48.995-0.0028344-27.061 21.932-49.001 48.994-49.005 27.062-0.0042517 49.003 21.929 49.006 48.995 0.00283 27.066-21.934 49.004-48.996 49.005z" stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" style="paint-order:fill markers stroke"/></svg>';
-   var svgWrong = '<svg class="result-circle" width="15" height="15" version="1.1" viewBox="0 0 3.9688 3.9688" xmlns="http://www.w3.org/2000/svg"><path d="m3.4911 0-1.5068 1.5068-1.5068-1.5068-0.47761 0.47761 1.5068 1.5068-1.5068 1.5068 0.47761 0.47761 1.5068-1.5068 1.5068 1.5068 0.47761-0.47761-1.5068-1.5068 1.5068-1.5068z" fill="#ff1b0d" stroke-miterlimit="2" stroke-width="0"/></svg>';
-   
+/*
+These functions help me get a predictable set of 
+random numbers so that all players get the same
+puzzles
+*/
+function xmur3(str) {
+   for(var i = 0, h = 1779033703 ^ str.length; i < str.length; i++) {
+      h = Math.imul(h ^ str.charCodeAt(i), 3432918353);
+      h = h << 13 | h >>> 19;
+   } return function() {
+      h = Math.imul(h ^ (h >>> 16), 2246822507);
+      h = Math.imul(h ^ (h >>> 13), 3266489909);
+      return (h ^= h >>> 16) >>> 0;
+   }
+}
+
+function mulberry32(a) {
+   return function() {
+      var t = a += 0x6D2B79F5;
+      t = Math.imul(t ^ t >>> 15, t | 1);
+      t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+   }
+}
+
+function randInt(min = 0, max = 5) {
+   return Math.floor((rand() * max) + min);
+}
+
+function right(str, chr) {
+  return str.slice(str.length-chr,str.length);
+}
+
+// Get GMT 'formatted' as yyyy-m-d
+function getUTC() {
+   var tDate = new Date();
+   var utc = tDate.getUTCFullYear() + '-' + right('0' + (tDate.getUTCMonth() + 1), 2) + '-' + right('0' + tDate.getUTCDate(), 2);
+   return utc;
+}
+
+var seed = xmur3('' + getUTC());
+var rand = mulberry32(seed());
+
 </script>
 </head>
 <body>
    <div id="dialog-overlay"></div>
+
+<textarea id="post-game-clipboard" rows="20" cols="80">Colordle <http://gamewith.us/colordle/> / </textarea>
+<script>document.querySelector('#post-game-clipboard').innerHTML += getUTC() + '\n'</script>
+
    <header>
       <h1>Colordle</h1>
       <a class="toggle-help"><svg width="25" height="25" version="1.1" viewBox="0 0 26.458 26.458" xmlns="http://www.w3.org/2000/svg">
@@ -293,8 +313,8 @@ input:checked + .slider:before {
       <h2>How to play</h2>
       <p>Guess the combination of colors in less than 10 guesses. If you've ever played Mastermind, you've played this.</p>
       <p>Select a row of colors and hit ENTER. You'll see a patttern that tells you how close your guess is.</p>
-      <p><script>document.write(svgFilledCircle)</script> : Correct color in the right place</p>
-      <p><script>document.write(svgOpenCircle)</script> : Correct color, incorrect place</p>
+      <p><script>document.write(charFilledCircle)</script> : Correct color in the right place</p>
+      <p><script>document.write(charOpenCircle)</script> : Correct color, incorrect place</p>
       <p>Unlike Wordle, the location of the indicators don't correspond to where the colors fall in the solution.</p>
 
       <div class="row" style="overflow: auto; margin-left: 30px;">
@@ -368,6 +388,55 @@ var numbersToWords = ['Zero', 'One', 'Two', 'Three', 'Four', 'Five'];
 
 var $body = document.querySelector('body');
 
+// This is a multi-dimensional array in which I store the user's answer.
+// Rendering the board is basically done by reading the contents of game[]
+// and updating the DOM elements.
+var game = [];
+
+// If we played this game before, we need to pull the game collection out of storage
+if (localStorage.getItem('seed') == getUTC()) {
+   
+   // Load game
+
+   game = JSON.parse(localStorage.getItem('game'));
+
+   // Load each row of the game
+   for (var rowIdx = 0; rowIdx < game.length; rowIdx++) {
+
+      // Load each cell of the row
+      for (var cellIdx = 0; cellIdx < game[rowIdx].length; cellIdx++) {
+
+         var cellValue = game[rowIdx][cellIdx];
+
+         var cell = document.querySelector('#cell-' + rowIdx + '-' + cellIdx);
+         cell.classList.add('value-' + cellValue);
+         cell.setAttribute('data-value', cellValue);
+         cell.innerHTML = colorBlindShapes[cellValue];
+      }
+
+      // Calculate the row's result
+      calculateResult(rowIdx, game[rowIdx]);
+   }
+
+   // Resume the game where we left off ... 
+   activeRow = game.length;
+   activeCell = 0;
+}
+// Game isn't a continuation or replay, so clean house
+else {
+   localStorage.setItem('seed', getUTC());
+   localStorage.setItem('game', '[]');
+}
+
+function renderGame() {
+   for (var i = 0; i < game.length; i++) {
+      var row = game[i];
+      for (var j = 0; j < row.length; j++) {
+         var cell = row[j];
+      }
+   }
+}
+
 var firstRun = localStorage.getItem('firstTimer') == null ? true : false;
 if (firstRun) {
    $body.classList.toggle('show-help');
@@ -390,23 +459,105 @@ function setupColorBlindMode() {
 
 setupColorBlindMode();
 
-function showPostGameDialog(title) {
+// This is where what a user entered is compared to the solution and the results is calculated
+function calculateResult(activeRow, rowValues) {
+
+   // Evaluate the answer and display
+   var numCorrect = 0;
+   var numPartlyCorrect = 0;
+
+   // Create a map of the counts of each value in the solution for the puzzle
+   var answerMap = {0: 0, 1: 0, 2: 0, 3: 0, 4: 0};
+   for (var i = 0; i < 5; i++) {
+      answerMap[answer[i]] += 1;
+   }
+
+   var idxMatches = [];
+
+   // Find the exact matches
+   for (var i = 0; i < 5; i++) {
+      
+      var cellValue = rowValues[i];
+
+      // Found a 100% match for color and position
+      if (answer[i] == cellValue) {
+
+         // Remove this from the answerMap so they're not mistakenly being reported as in the same place as well
+         answerMap[answer[i]] -= 1;
+
+         numCorrect += 1;
+
+         // Mark this one as being handled
+         idxMatches.push(i);
+      }
+   }
+
+   // Find partial matches
+   for (var i = 0; i < 5; i++) {
+      if (!idxMatches.includes(i)) {
+         var cellValue = document.querySelector('#cell-' + activeRow + '-' + i).getAttribute('data-value');
+         if (answerMap[cellValue] > 0) {
+            numPartlyCorrect += 1;
+            answerMap[cellValue] -= 1;
+         }
+      }
+   }
+
+   // Write the circles to show the result
+   var $result = document.querySelector('#result-' + activeRow);
+   var title = '';
+
+   // Total dud
+   if (numCorrect == 0 && numPartlyCorrect == 0) {
+      $result.innerHTML = charWrong;
+      title = 'None of the colors are correct';
+   }
+   // Got something!
+   else {
+
+      var dots = charFilledCircle.repeat(numCorrect) + charOpenCircle.repeat(numPartlyCorrect);
+
+      $result.innerHTML = dots;
+
+      document.querySelector('#post-game-summary').innerHTML += dots + '<br />';
+
+      document.querySelector('#post-game-clipboard').value += dots + '\n';
+
+      if (numCorrect == 1) {
+         title += 'One color is in the correct position'; 
+      } else if (numCorrect > 0) {
+         title += numbersToWords[numCorrect] + ' correct colors in the correct positions ';
+      }
+
+      // Do we need a line break?
+      if (numCorrect > 0 && numPartlyCorrect > 0) {
+         title += '\n';
+      }
+
+      if (numPartlyCorrect == 1) {
+         title += 'One color is correct, but in the wrong position';
+      } else if (numPartlyCorrect > 0) {
+         title += numbersToWords[numPartlyCorrect] + ' colors are correct, but in the wrong positions';
+      }
+   }
    
-   /*
-      <div id="post-game" class="dialog">
-      <h2 id="post-game-title">TITLE</h2>
-      <div id="post-game-summary"></div>
-      <div id="share-btn" class="btn">Share</div>
-      </div>
-   */
+   $result.setAttribute('title', title);
+
+   // Show the victory or failure screen if we're at certain points in the game
+   if (numCorrect == 5) {
+      showPostGameDialog("Victory!");
+   }
+   else if (activeRow == 10) {
+      showPostGameDialog("Oops! Better luck tomorrow!");
+   }
+
+   return [numCorrect, numPartlyCorrect];
+}
+
+function showPostGameDialog(title) {
 
    document.querySelector('#post-game-title').innerHTML = title;
-   
-   // Calculate the result dots using the game data to show the user
-   var dots = '';
-
-   document.querySelector('#post-game-summary').innerHTML = dots;
-   
+      
    $body.classList.toggle('show-post-game');
 }
 
@@ -454,6 +605,14 @@ Array.prototype.forEach.call(document.querySelectorAll('.result'), function(el, 
    }, true);
 });
 
+document.querySelector('#share-btn').addEventListener('click', function(e) {
+   var $ta = document.querySelector('#post-game-clipboard');
+   $ta.select();
+   document.execCommand('copy');
+});
+
+
+
 // Set the shapes for the help dialog's cells
 Array.prototype.forEach.call(document.querySelectorAll('#help .cell'), function(el, i) {
    if (i < colorBlindShapes.length) {
@@ -478,10 +637,11 @@ Array.prototype.forEach.call(document.querySelectorAll('#keyboard .cell'), funct
       // User clicks on one of the colored blocks
       if (id.startsWith('value-')) {
          if (activeCell < 5) {
+
             var cell = document.querySelector('#cell-' + activeRow + '-' + activeCell);
             cell.classList.add(e.target.id);
             
-            var value = parseInt(e.target.id.substring(e.target.id.length -1));
+            var value = parseInt(e.target.id.substring(e.target.id.length - 1));
             cell.setAttribute('data-value', value);
             cell.innerHTML = colorBlindShapes[value];
 
@@ -491,90 +651,24 @@ Array.prototype.forEach.call(document.querySelectorAll('#keyboard .cell'), funct
       // ENTER
       else if (id == 'enter') {
 
+         // User has entered five values
          if (activeCell == 5) {
 
-            // Evaluate the answer and display
-            var numCorrect = 0;
-            var numPartlyCorrect = 0;
-
-            // Create a map of the counts of each value
-            var answerMap = {0: 0, 1: 0, 2: 0, 3: 0, 4: 0};
+            // Grab the values entered by the user so that the response can be generated 
+            var rowValues = [];
             for (var i = 0; i < 5; i++) {
-               answerMap[answer[i]] += 1;
+               rowValues.push(document.querySelector('#cell-' + activeRow + '-' + i).getAttribute('data-value'));
             }
 
-            var idxMatches = [];
+            // Before we show the result, we need to store the row
+            game.push(rowValues);
+            localStorage.setItem('game', JSON.stringify(game));
 
-            // Find the exact matches
-            for (var i = 0; i < 5; i++) {
-               var cellValue = document.querySelector('#cell-' + activeRow + '-' + i).getAttribute('data-value');
-               if (answer[i] == cellValue) {
-
-                  // Remove this from the answerMap so they're not mistakenly being reported as in the same place as well
-                  answerMap[answer[i]] -= 1;
-
-                  numCorrect += 1;
-
-                  // Mark this one as being handled
-                  idxMatches.push(i);
-               }
-            }
-
-            for (var i = 0; i < 5; i++) {
-               if (!idxMatches.includes(i)) {
-                  var cellValue = document.querySelector('#cell-' + activeRow + '-' + i).getAttribute('data-value');
-                  if (answerMap[cellValue] > 0) {
-                     numPartlyCorrect += 1;
-                     answerMap[cellValue] -= 1;
-                  }
-               }
-            }
-
-            // Write the circles to show the result
-            var $result = document.querySelector('#result-' + activeRow);
-            
-            var title = '';
-            if (numCorrect == 0 && numPartlyCorrect == 0) {
-
-               $result.innerHTML = svgWrong;
-
-               title = 'None of the colors are correct';
-            }
-            else {
-
-               $result.innerHTML = svgFilledCircle.repeat(numCorrect) + svgOpenCircle.repeat(numPartlyCorrect);
-
-               if (numCorrect == 1) {
-                  title += 'One color is in the correct position'; 
-               } else if (numCorrect > 0) {
-                  title += numbersToWords[numCorrect] + ' correct colors in the correct positions ';
-               }
-
-               // Do we need a line break?
-               if (numCorrect > 0 && numPartlyCorrect > 0) {
-                  title += '\n';
-               }
-
-               if (numPartlyCorrect == 1) {
-                  title += 'One color is correct, but in the wrong position';
-               } else if (numPartlyCorrect > 0) {
-                  title += numbersToWords[numPartlyCorrect] + ' colors are correct, but in the wrong positions';
-               }
-            }
-            
-            $result.setAttribute('title', title);
+            const [numCorrect, numPartlyCorrect] = calculateResult(activeRow, rowValues);
 
             // Start kicking the user to the next row and reset the column
             activeRow += 1;
             activeCell = 0;
-
-            // Show the victory screen
-            if (numCorrect == 5) {
-               $body.classList.toggle('show-victory');
-            }
-            else if (activeRow == 10) {
-               $body.classList.toggle('show-oof');
-            }
             
          } else {
             alert('You need to finish making your selections!');
