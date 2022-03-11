@@ -81,6 +81,10 @@ body.colorBlindMode .cell {
 #keyboard .cell {
    cursor: pointer;
 }
+#solution {
+   display: none;
+   overflow: auto;
+}
 #enter, #delete { color: white; }
 .value-0 { background-color: #ff595e; }
 .value-1 { background-color: #ffca3a; }
@@ -158,6 +162,19 @@ body.show-settings #dialog-overlay
    border-radius: 5px;
    float: right;
 }
+
+#toggle-post-game {
+   position: absolute;
+   top: -15px;
+   right: -15px;
+   border-radius: 50%;
+   height: 20px;
+   width: 20px;
+   line-height: 20px;
+   text-align: center;
+   font-size: 25px;
+}
+
 /* Prevent svgs from swallowing clicks */
 svg {
   pointer-events: none;
@@ -272,6 +289,7 @@ function right(str, chr) {
 function getUTC() {
    var tDate = new Date();
    var utc = tDate.getUTCFullYear() + '-' + right('0' + (tDate.getUTCMonth() + 1), 2) + '-' + right('0' + tDate.getUTCDate(), 2);
+   utc += ''; // Put a temp variable in here for debugging
    return utc;
 }
 
@@ -312,6 +330,8 @@ var rand = mulberry32(seed());
          </div>
       </div>
    </div>
+
+   <div id="solution"></div>
 
    <div id="help" class="dialog">
 
@@ -354,7 +374,8 @@ var rand = mulberry32(seed());
    <div id="post-game" class="dialog">
       <h2 id="post-game-title">TITLE</h2>
       <div id="post-game-summary"></div>
-      <div id="share-btn" class="btn">Share</div>
+      <div id="share-btn" class="btn">Copy to clipboard</div>
+      <a id="toggle-post-game" class="btn">&times;</a>
    </div>
 
    <div id="result" class="dialog">
@@ -397,6 +418,8 @@ var $body = document.querySelector('body');
 // Rendering the board is basically done by reading the contents of game[]
 // and updating the DOM elements.
 var game = [];
+
+drawSolution();
 
 // If we played this game before, we need to pull the game collection out of storage
 if (localStorage.getItem('seed') == getUTC()) {
@@ -512,24 +535,23 @@ function calculateResult(activeRow, rowValues) {
    var $result = document.querySelector('#result-' + activeRow);
    var title = '';
 
+   var dots = '';
+
    // Total dud
    if (numCorrect == 0 && numPartlyCorrect == 0) {
+      dots = charWrong;
       $result.innerHTML = charWrong;
       title = 'None of the colors are correct';
    }
    // Got something!
    else {
 
-      var dots = charFilledCircle.repeat(numCorrect) + charOpenCircle.repeat(numPartlyCorrect);
+      dots = charFilledCircle.repeat(numCorrect) + charOpenCircle.repeat(numPartlyCorrect);
 
       $result.innerHTML = dots;
 
-      document.querySelector('#post-game-summary').innerHTML += dots + '<br />';
-
-      document.querySelector('#post-game-clipboard').value += dots + '\n';
-
       if (numCorrect == 1) {
-         title += 'One color is in the correct position'; 
+         title += 'One color is in the correct position';
       } else if (numCorrect > 0) {
          title += numbersToWords[numCorrect] + ' correct colors in the correct positions ';
       }
@@ -545,27 +567,43 @@ function calculateResult(activeRow, rowValues) {
          title += numbersToWords[numPartlyCorrect] + ' colors are correct, but in the wrong positions';
       }
    }
+
+   // Push dots to the places we'll need it later
+   document.querySelector('#post-game-summary').innerHTML += dots + '<br />';
+   document.querySelector('#post-game-clipboard').value += dots + '\n';
    
    $result.setAttribute('title', title);
 
    // Show the victory or failure screen if we're at certain points in the game
    if (numCorrect == 5) {
-      showPostGameDialog("Victory!");
+      gameOver("Victory!");
    }
    else if (activeRow == 9) {
-      showPostGameDialog("Oops! Better luck tomorrow!");
+      gameOver("Oops! Better luck tomorrow!");
    }
 
    return [numCorrect, numPartlyCorrect];
 }
 
-function showPostGameDialog(title) {
+function gameOver(message) {
+   showPostGameDialog(message);
+   
+   // Hide the keyboard, show the solution
+   document.querySelector('#keyboard').style.display = 'none';
+   document.querySelector('#solution').style.display = 'block';
+}
 
+function showPostGameDialog(title) {
    document.querySelector('#post-game-title').innerHTML = title;
-      
    $body.classList.toggle('show-post-game');
 }
 
+Array.prototype.forEach.call(document.querySelectorAll('#toggle-post-game'), function(el, i) {
+   el.addEventListener('click', function (e) {
+      e.preventDefault();
+      $body.classList.toggle('show-post-game');
+   })
+});
 
 Array.prototype.forEach.call(document.querySelectorAll('.toggle-help'), function(el, i) {
    el.addEventListener('click', function (e) {
@@ -692,6 +730,17 @@ Array.prototype.forEach.call(document.querySelectorAll('#keyboard .cell'), funct
       }
    }, false);
 });
+
+function drawSolution() {
+
+   var html = '<div class="row">';
+   for (var n = 0; n < answer.length; n++) {
+      html += '<div class="cell value-' + answer[n] + '">' + colorBlindShapes[answer[n]] + '</div>';
+   }
+   html += '</div>';
+
+   document.querySelector('#solution').innerHTML = html;
+}
 
 </script>
 
