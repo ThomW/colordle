@@ -300,10 +300,6 @@ var rand = mulberry32(seed());
 </head>
 <body>
    <div id="dialog-overlay"></div>
-
-<textarea id="post-game-clipboard" rows="20" cols="80">Colordle <http://lmnopc.com/games/colordle/> / </textarea>
-<script>document.querySelector('#post-game-clipboard').innerHTML += getUTC() + '\n'</script>
-
    <header>
       <h1>Colordle</h1>
       <a class="toggle-help"><svg width="25" height="25" version="1.1" viewBox="0 0 26.458 26.458" xmlns="http://www.w3.org/2000/svg">
@@ -570,7 +566,6 @@ function calculateResult(activeRow, rowValues) {
 
    // Push dots to the places we'll need it later
    document.querySelector('#post-game-summary').innerHTML += dots + '<br />';
-   document.querySelector('#post-game-clipboard').value += dots + '\n';
    
    $result.setAttribute('title', title);
 
@@ -649,12 +644,15 @@ Array.prototype.forEach.call(document.querySelectorAll('.result'), function(el, 
 });
 
 document.querySelector('#share-btn').addEventListener('click', function(e) {
-   var $ta = document.querySelector('#post-game-clipboard');
+   
+   var $ta = document.createElement("textarea");
+   document.body.appendChild($ta);
+   $ta.innerHTML = 'Colordle <http://lmnopc.com/games/colordle/> / ' + getUTC() + '\n' + document.querySelector('#post-game-summary').innerHTML.replaceAll('<br>', '\n').trim();
    $ta.select();
    document.execCommand('copy');
+   document.body.removeChild($ta);
+
 });
-
-
 
 // Set the shapes for the help dialog's cells
 Array.prototype.forEach.call(document.querySelectorAll('#help .cell'), function(el, i) {
