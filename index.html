@@ -48,8 +48,8 @@ body {
 .cell, .result {
    float: left;
    width: 40px;
-   height: 40px;
-   line-height: 40px;
+   height: 42px;
+   line-height: 42px;
    font-size: 30px;
    text-align: center;
    font-weight: bold;
@@ -84,6 +84,9 @@ body.colorBlindMode .cell {
 #solution {
    display: none;
    overflow: auto;
+}
+#solution-text {
+   cursor: default;
 }
 #enter, #delete { color: white; }
 .value-0 { background-color: #ff595e; }
@@ -241,6 +244,32 @@ input:checked + .slider:before {
 .slider.round:before {
   border-radius: 50%;
 }
+
+/* Solution bounce */
+@-webkit-keyframes bounce {
+   100% { top: -5px; }
+}
+
+@keyframes bounce {
+  100% { top: -5px; }
+}
+#solution-text span {
+   top: 5px;
+   position: relative;
+   -webkit-animation: bounce .5s ease infinite alternate;
+   animation: bounce .5s ease infinite alternate;
+}
+
+#solution-text span:nth-child(2) { -webkit-animation-delay: .1s; animation-delay: .1s; }
+#solution-text span:nth-child(3) { -webkit-animation-delay: .2s; animation-delay: .2s; }
+#solution-text span:nth-child(4) { -webkit-animation-delay: .3s; animation-delay: .3s; }
+#solution-text span:nth-child(5) { -webkit-animation-delay: .4s; animation-delay: .4s; }
+#solution-text span:nth-child(6) { -webkit-animation-delay: .5s; animation-delay: .5s; }
+#solution-text span:nth-child(7) { -webkit-animation-delay: .6s; animation-delay: .6s; }
+#solution-text span:nth-child(8) { -webkit-animation-delay: .7s; animation-delay: .7s; }
+#solution-text span:nth-child(9) { -webkit-animation-delay: .8s; animation-delay: .8s; }
+
+
 </style>
 <script type="text/javascript">
 
@@ -735,6 +764,7 @@ function drawSolution() {
    for (var n = 0; n < answer.length; n++) {
       html += '<div class="cell value-' + answer[n] + '">' + colorBlindShapes[answer[n]] + '</div>';
    }
+   html += '<div class="result" id="solution-text"><span>S</span><span>O</span><span>L</span><span>U</span><span>T</span><span>I</span><span>O</span><span>N</span></div>';
    html += '</div>';
 
    document.querySelector('#solution').innerHTML = html;
