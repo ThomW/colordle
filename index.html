@@ -11,10 +11,10 @@
 <meta property="og:image:height" content="275">
 <style>
 html {
-   overflow: hidden;
-   height: 100%;
+   /*overflow: hidden;
+   height: 100%;*/
    width: 100%;
-   position: fixed;
+   /* position: fixed; */
 }
 html,
 body {
@@ -25,7 +25,7 @@ body {
 }
 body {
    width: 405px;
-   height: 100%;
+   /* height: 100%; */
    padding: 0;
    margin: 0 auto;
    font-family: Helvetica, Arial, sans-serif;
@@ -829,30 +829,26 @@ function drawSolution() {
    document.querySelector('#solution').innerHTML = html;
 }
 
-(function() {
+document.addEventListener('DOMContentLoaded', function() {
 
-   console.log('window.innerHeight: ' + window.innerHeight);
-   console.log('document.body.clientHeight: ' + document.body.clientHeight);
-   console.log('document.body.style.height: ' + document.body.style.height);
-
-   document.body.style.height = (document.body.clientHeight + 1) + 'px';
-
-   console.log('window.innerHeight: ' + window.innerHeight);
-   console.log('document.body.clientHeight: ' + document.body.clientHeight);
-   console.log('document.body.style.height: ' + document.body.style.height);
+   document.body.style.height = (document.body.clientHeight + 100) + 'px';
 
    // Some dumb Javascript to try and get iOS Safari to hide the address bar
-   addEventListener("load", function() {
-      window.scrollTo(1, 0);
-   }, false);
+   setTimeout(function () {
+      
+      // Scroll to force the address bar to hide
+      window.scrollTo(0, 10);
 
-   document.body.style.height = null;
+      // Reset the body height style
+      document.body.style.height = '100%';
 
-   console.log('window.innerHeight: ' + window.innerHeight);
-   console.log('document.body.clientHeight: ' + document.body.clientHeight);
-   console.log('document.body.style.height: ' + document.body.style.height);
+      // Fix the HTML and body elements
+      document.documentElement.style.height = '100%';
+      document.documentElement.style.overflow = 'hidden';
+      document.documentElement.style.position = 'fixed';
+   }, 2);
 
-})();
+}, false);
 
 </script>
 
