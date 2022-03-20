@@ -10,18 +10,24 @@
 <meta property="og:image:width" content="526">
 <meta property="og:image:height" content="275">
 <style>
+html {
+   overflow: hidden;
+   height: 100%;
+   width: 100%;
+   position: fixed;
+}
 html,
+body {
+   -webkit-user-select: none;
+   -moz-user-select: none;
+   -ms-user-select: none;
+   user-select: none;
+}
 body {
    width: 405px;
    height: 100%;
    padding: 0;
    margin: 0 auto;
-   -webkit-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
-  user-select: none;
-}
-body {
    font-family: Helvetica, Arial, sans-serif;
    position: relative;
    text-align: center;
@@ -33,7 +39,6 @@ body {
    border: none;
    left: -1000px;
 }
-
 #game {
    position: relative;
    overflow: auto;
@@ -156,6 +161,9 @@ body.show-settings #dialog-overlay
 .dialog h2 {
    margin-top: 0;
 }
+.dialog .btn {
+   margin-top: 15px;
+}
 .btn {
    font-weight: bold;
    cursor: pointer;
@@ -168,6 +176,7 @@ body.show-settings #dialog-overlay
 
 #toggle-post-game {
    position: absolute;
+   margin: 0;
    top: -15px;
    right: -15px;
    border-radius: 50%;
@@ -354,9 +363,10 @@ var rand = mulberry32(seed());
             <div class="cell" id="enter">ENTER</div>
          </div>
       </div>
-   </div>
 
-   <div id="solution"></div>
+      <div id="solution"></div>
+
+   </div>
 
    <div id="help" class="dialog">
 
