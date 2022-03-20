@@ -345,11 +345,11 @@ var rand = mulberry32(seed());
 
       <div id="keyboard">
          <div class="row">
-            <div class="cell value-0" id="value-0"></div>
-            <div class="cell value-1" id="value-1"></div>
-            <div class="cell value-2" id="value-2"></div>
-            <div class="cell value-3" id="value-3"></div>
-            <div class="cell value-4" id="value-4"></div>
+            <div class="cell value-0" id="value-0" draggable="true"></div>
+            <div class="cell value-1" id="value-1" draggable="true"></div>
+            <div class="cell value-2" id="value-2" draggable="true"></div>
+            <div class="cell value-3" id="value-3" draggable="true"></div>
+            <div class="cell value-4" id="value-4" draggable="true"></div>
             <div class="cell" id="delete">&larr;</div>
             <div class="cell" id="enter">ENTER</div>
          </div>
@@ -426,7 +426,6 @@ document.querySelector('#board').innerHTML = html;
 
 // Run the game
 var activeRow = 0;
-var activeCell = 0;
 var answer = [randInt(), randInt(), randInt(), randInt(), randInt()];
 
 var charCorrect = '&#11044;';
@@ -473,7 +472,6 @@ if (localStorage.getItem('seed') == getUTC()) {
 
    // Resume the game where we left off ... 
    activeRow = game.length;
-   activeCell = 0;
 }
 // Game isn't a continuation or replay, so clean house
 else {
@@ -674,13 +672,19 @@ Array.prototype.forEach.call(document.querySelectorAll('.result'), function(el, 
 
 document.querySelector('#share-btn').addEventListener('click', function(e) {
    
+   // Create a textarea
    var $ta = document.createElement("textarea");
    document.body.appendChild($ta);
+   
+   // Copy the contents of #post-game-summary, converting the <br>'s to \n's
    $ta.innerHTML = 'Colordle <http://lmnopc.com/games/colordle/> / ' + getUTC() + '\n' + document.querySelector('#post-game-summary').innerHTML.replaceAll('<br>', '\n').trim();
+
+   // Select and copy the contents of the textarea
    $ta.select();
    document.execCommand('copy');
-   document.body.removeChild($ta);
 
+   // Delete the textarea element so the keyboard doesn't show up in iOS
+   document.body.removeChild($ta);
 });
 
 // Set the shapes for the help dialog's cells
@@ -690,6 +694,32 @@ Array.prototype.forEach.call(document.querySelectorAll('#help .cell'), function(
    }
 });
 
+Array.prototype.forEach.call(document.querySelectorAll('#board .cell'), function(el, i) {
+
+   // Allow cells to have keyboard cells dropped into them
+   el.addEventListener('dragover', function(e) {
+      e.preventDefault();
+   });
+
+   el.addEventListener('drop', function(e) {
+
+      e.preventDefault();
+
+      // Parse the column index from the id of the drop target
+      var cellIdx = e.target.id.split('-')[2];
+
+      // Retrieve the value that was passed in dragstart
+      var value = parseInt(e.dataTransfer.getData('text/plain'));
+
+      // Find the cell in the activeRow that matches the cellIdx and fill in the data and classnames
+      var cell = document.querySelector('#cell-' + activeRow + '-' + cellIdx);
+      cell.className = 'cell value-' + value; // Override the cell's classname so that it doesn't wind up with multiple value-# values
+      cell.setAttribute('data-value', value);
+      cell.innerHTML = colorBlindShapes[value];
+   });
+
+});
+
 Array.prototype.forEach.call(document.querySelectorAll('#keyboard .cell'), function(el, i) {
 
    // Set this key's color blind shape
@@ -697,10 +727,27 @@ Array.prototype.forEach.call(document.querySelectorAll('#keyboard .cell'), funct
       el.innerHTML = colorBlindShapes[i];
    }
 
+   // Make the keyboard things draggable
+   el.addEventListener('dragstart', function(e) {
+      // Pass just the numeric part of the value embedded in the id into the drag data
+      var val = e.target.id.split('-')[1];
+      e.dataTransfer.setData('text/plain', val);
+   });
+
    // Add click event handlers for all the buttons
    el.addEventListener('click', function (e) {
 
       e.preventDefault();
+
+      // When the user clicks on the keyboard, find the left-most emtpy cell
+      var activeCell = 5;
+      for (var i = 0; i < 5; i++) {
+         var cell = document.querySelector('#cell-' + activeRow + '-' + i);
+         if (cell.getAttribute('data-value') == null) {
+            activeCell  = i;
+            break;
+         }
+      }
 
       var id = e.target.id;
 
@@ -714,8 +761,6 @@ Array.prototype.forEach.call(document.querySelectorAll('#keyboard .cell'), funct
             var value = parseInt(e.target.id.substring(e.target.id.length - 1));
             cell.setAttribute('data-value', value);
             cell.innerHTML = colorBlindShapes[value];
-
-            activeCell += 1;
          }
       }
       // ENTER
@@ -738,7 +783,6 @@ Array.prototype.forEach.call(document.querySelectorAll('#keyboard .cell'), funct
 
             // Start kicking the user to the next row and reset the column
             activeRow += 1;
-            activeCell = 0;
             
          } else {
             alert('You need to finish making your selections!');
@@ -747,17 +791,22 @@ Array.prototype.forEach.call(document.querySelectorAll('#keyboard .cell'), funct
       }
       // DELETE
       else if (id == 'delete') {
-         if (activeCell > 0) {
-            activeCell -= 1;
-            // Reset the cell's classname back to just 'cell'
-            var cell = document.querySelector('#cell-' + activeRow + '-' + activeCell);
-            cell.className = 'cell';
-            cell.innerHTML = '&nbsp;';
+
+         // Find the right-most cell and reset it
+         for (i = 4; i >= 0; i--) {
+            var cell = document.querySelector('#cell-' + activeRow + '-' + i);
+            if (cell.getAttribute('data-value') != null) {
+               cell.removeAttribute('data-value');
+               cell.className = 'cell';
+               cell.innerHTML = '&nbsp;';
+               break;
+            }
          }
       }
    }, false);
 });
 
+// Populates the solution row
 function drawSolution() {
 
    var html = '<div class="row">';
