@@ -829,6 +829,11 @@ function drawSolution() {
    document.querySelector('#solution').innerHTML = html;
 }
 
+// Some dumb Javascript to try and get iOS Safari to hide the address bar
+addEventListener("load", function() {
+    window.scrollTo(1, 0);
+}, false);
+
 </script>
 
 <footer>&copy; 2022 Thom Wetzel / <a href="http://lmnopc.com/">LMNOpc</a></footer>
