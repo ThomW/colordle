@@ -829,10 +829,30 @@ function drawSolution() {
    document.querySelector('#solution').innerHTML = html;
 }
 
-// Some dumb Javascript to try and get iOS Safari to hide the address bar
-addEventListener("load", function() {
-    window.scrollTo(1, 0);
-}, false);
+(function() {
+
+   console.log('window.innerHeight: ' + window.innerHeight);
+   console.log('document.body.clientHeight: ' + document.body.clientHeight);
+   console.log('document.body.style.height: ' + document.body.style.height);
+
+   document.body.style.height = (document.body.clientHeight + 1) + 'px';
+
+   console.log('window.innerHeight: ' + window.innerHeight);
+   console.log('document.body.clientHeight: ' + document.body.clientHeight);
+   console.log('document.body.style.height: ' + document.body.style.height);
+
+   // Some dumb Javascript to try and get iOS Safari to hide the address bar
+   addEventListener("load", function() {
+      window.scrollTo(1, 0);
+   }, false);
+
+   document.body.style.height = null;
+
+   console.log('window.innerHeight: ' + window.innerHeight);
+   console.log('document.body.clientHeight: ' + document.body.clientHeight);
+   console.log('document.body.style.height: ' + document.body.style.height);
+
+})();
 
 </script>
 
