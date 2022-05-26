@@ -112,12 +112,14 @@ header h1 {
 }
 header .toggle-settings { position: absolute; top: 10px; left: 10px; cursor: pointer; }
 header .toggle-help { position: absolute; top: 10px; right: 10px; cursor: pointer; }
+header .toggle-history { position: absolute; top: 10px; right: 40px; cursor: pointer; }
 footer {
    text-align: center;
    line-height: 60px;
 }
 body.show-settings #settings { display: block; }
 body.show-help #help { display: block; }
+body.show-history #history { display: block; }
 body.show-victory #victory { display: block; }
 body.show-oof #oof { display: block; }
 body.show-result #result { display: block; }
@@ -125,6 +127,7 @@ body.show-post-game #post-game { display: block; }
 
 body.show-settings #dialog-overlay
 , body.show-help #dialog-overlay
+, body.show-history #dialog-overlay
 , body.show-victory #dialog-overlay
 , body.show-result #dialog-overlay
 , body.show-oof #dialog-overlay 
@@ -171,7 +174,7 @@ body.show-settings #dialog-overlay
    float: right;
 }
 
-#toggle-post-game {
+.btn-close  {
    position: absolute;
    margin: 0;
    top: -15px;
@@ -275,6 +278,16 @@ input:checked + .slider:before {
 #solution-text span:nth-child(8) { -webkit-animation-delay: .7s; animation-delay: .7s; }
 #solution-text span:nth-child(9) { -webkit-animation-delay: .8s; animation-delay: .8s; }
 
+.bar-value { 
+   background-color: #8ac926;
+   color: #fff;
+   text-align: right;
+}
+.bar-value-losses { background-color: #ff595e; }
+.bar-value-9, .bar-value-8, .bar-value-7 { background-color: #ffca3a; }
+.bar-value span { 
+   padding-right: 2px;
+}
 
 </style>
 <script type="text/javascript">
@@ -343,6 +356,7 @@ var rand = mulberry32(seed());
           <path d="m38.022 16.473a13.229 13.229 0 0 0-13.229 13.229 13.229 13.229 0 0 0 13.229 13.229 13.229 13.229 0 0 0 13.229-13.229 13.229 13.229 0 0 0-13.229-13.229zm0.24468 3.4377c1.9224 0 3.4748 0.39801 4.6565 1.1948 1.605 1.077 2.4075 2.5133 2.4075 4.3084 0 0.74429-0.20742 1.4624-0.62189 2.1542s-1.2609 1.5367-2.5396 2.535c-0.89067 0.70051-1.4553 1.2653-1.6934 1.6944-0.22928 0.42031-0.34408 0.97164-0.34408 1.6546h-5.0266v-0.49904c0-0.84937 0.09706-1.5365 0.29106-2.0619 0.19401-0.53414 0.48075-1.0201 0.85994-1.4579 0.38802-0.43782 1.2522-1.2084 2.5926-2.3117 0.7143-0.57792 1.0715-1.1078 1.0715-1.5894 0-0.4816-0.14533-0.85365-0.43634-1.1163-0.28219-0.27145-0.71426-0.40729-1.2963-0.40729-0.62612 0-1.1464 0.20575-1.5608 0.6173-0.40565 0.41155-0.66578 1.1297-0.78042 2.1542l-5.1326-0.63056c0.17637-1.8739 0.8597-3.3801 2.0502-4.5184 1.1993-1.1471 3.0335-1.7204 5.5027-1.7204zm-3.3332 14.868h5.3839v4.7151h-5.3839z"/>
          </g>
          </svg></a>
+      <a class="toggle-history">📊</a>
    </header>
    <div id="game">
       <div id="board">
@@ -407,7 +421,14 @@ var rand = mulberry32(seed());
       <h2 id="post-game-title">TITLE</h2>
       <div id="post-game-summary"></div>
       <div id="share-btn" class="btn">Copy to clipboard</div>
-      <a id="toggle-post-game" class="btn">&times;</a>
+      <a id="toggle-post-game" class="btn btn-close">&times;</a>
+   </div>
+
+   <div id="history" class="dialog">
+      <h2>HISTORY</h2>
+      <div id="history-content">
+      </div>
+      <a class="toggle-history btn btn-close">&times;</a>
    </div>
 
    <div id="result" class="dialog">
@@ -605,21 +626,90 @@ function calculateResult(activeRow, rowValues) {
 
    // Show the victory or failure screen if we're at certain points in the game
    if (numCorrect == 5) {
-      gameOver("Victory!");
+      gameOver("Victory!", true, activeRow);
    }
    else if (activeRow == 9) {
-      gameOver("Oops! Better luck tomorrow!");
+      gameOver("Oops! Better luck tomorrow!", false, activeRow);
    }
 
    return [numCorrect, numPartlyCorrect];
 }
 
-function gameOver(message) {
+function gameOver(message, isWinner, activeRow) {
+
    showPostGameDialog(message);
    
    // Hide the keyboard, show the solution
    document.querySelector('#keyboard').style.display = 'none';
    document.querySelector('#solution').style.display = 'block';
+
+   // Accumulate history if the stored lastFinishedGame isn't the current game,
+   // meaning it's the first time the user finished it.
+   utc = getUTC();
+   if (localStorage.getItem('lastFinishedGame') != utc) {
+
+      localStorage.setItem('lastFinishedGame', utc);
+
+      gameHistory = loadGameHistory();
+
+      if (isWinner) {
+         // activeRow is a 0-based index, and I want to track human-readable numbers, so add one
+         gameHistory['' + (activeRow + 1)] += 1;
+      } else {
+         gameHistory['losses'] += 1;
+      }
+
+      // Encode history and resave it
+      localStorage.setItem('gameHistory', JSON.stringify(gameHistory));
+   }
+}
+
+function loadGameHistory() {
+   gameHistory = localStorage.getItem('gameHistory');
+   if (gameHistory == null) {
+      gameHistory = {
+           '1': 0
+         , '2': 0
+         , '3': 0
+         , '4': 0
+         , '5': 0
+         , '6': 0
+         , '7': 0
+         , '8': 0
+         , '9': 0
+         , 'losses': 0
+      };
+   } else {
+      gameHistory = JSON.parse(gameHistory);
+   }
+   return gameHistory;
+}
+
+function showHistory() {
+   var gameHistory = loadGameHistory();
+   var html = '';
+   
+   // Find biggest count, and total count of games
+   var maxValue = 0;
+   var totalGames = 0;
+   for (key in gameHistory) {
+      maxValue = Math.max(maxValue, gameHistory[key]);
+      totalGames += gameHistory[key];
+   }
+
+   html += '<h4>Games Played: ' + totalGames + '</h4>'; 
+
+   // Draw the bar chart
+   html += '<table>';
+   for (key in gameHistory) {
+      html += '<tr>';
+      html += '<th width="1%" align="center">' + key + '</th>';
+      html += '<td width="*"><div class="bar-value bar-value-' + key + '" style="width:' + ((gameHistory[key] / maxValue) * 100) + '%"><span>' + gameHistory[key] + '<span></div></td>';
+      html += '</tr>';
+   }
+   html += '</table>';
+
+   document.querySelector('#history-content').innerHTML = html;
 }
 
 function showPostGameDialog(title) {
@@ -638,6 +728,16 @@ Array.prototype.forEach.call(document.querySelectorAll('.toggle-help'), function
    el.addEventListener('click', function (e) {
       e.preventDefault();
       $body.classList.toggle('show-help');
+   })
+});
+
+Array.prototype.forEach.call(document.querySelectorAll('.toggle-history'), function(el, i) {
+   el.addEventListener('click', function (e) {
+      e.preventDefault();
+      $body.classList.toggle('show-history');
+      if ($body.classList.contains('show-history')) {
+         showHistory();
+      }
    })
 });
 
