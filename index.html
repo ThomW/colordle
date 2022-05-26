@@ -697,6 +697,9 @@ function showHistory() {
       totalGames += gameHistory[key];
    }
 
+   // Hack to prevent the bars from all going 100% when there are no records w/o a dumb 'if' statement in the html +=
+   maxValue = Math.max(maxValue, 1);
+
    html += '<h4>Games Played: ' + totalGames + '</h4>'; 
 
    // Draw the bar chart
