@@ -662,8 +662,9 @@ function gameOver(message, isWinner, activeRow) {
       gameHistory = loadGameHistory();
 
       if (isWinner) {
-         // activeRow is a 0-based index, and I want to track human-readable numbers, so add one
-         gameHistory['' + (activeRow + 1)] += 1;
+         // Increment the turn the game was completed on
+         var n = '' + (activeRow + 1);
+         gameHistory[n] += 1;
       } else {
          gameHistory['losses'] += 1;
       }
@@ -686,10 +687,15 @@ function loadGameHistory() {
          , '7': 0
          , '8': 0
          , '9': 0
+         , '10': 0
          , 'losses': 0
       };
    } else {
       gameHistory = JSON.parse(gameHistory);
+      // Fix a bug where some people might not have 10 in their gameHistory dictionary
+      if (!('10' in gameHistory)) {
+         gameHistory['10'] = 0;
+      }
    }
    return gameHistory;
 }
