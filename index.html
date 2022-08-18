@@ -101,22 +101,32 @@ body.colorBlindMode .cell {
 }
 header {
    position: relative;
-   margin-bottom: 10px;
-   padding-top: 10px;
+   padding: 10px 0;
+   text-align: left;
+   overflow: auto;
 }
 header h1 {
    margin: 0;
    padding: 0;
    font-size: 30px;
-   line-height: 30px; 
+   line-height: 30px;
+   float: left;
 }
-header .toggle-settings { position: absolute; top: 10px; left: 10px; cursor: pointer; }
-header .toggle-help { position: absolute; top: 10px; right: 10px; cursor: pointer; }
-header .toggle-history { position: absolute; top: 10px; right: 40px; cursor: pointer; }
+header .btn { float: left; margin-left: 5px; padding: 7px; background-color: #a0a0a0; text-decoration: none; }
+header .toggle-help { width: 18px; text-align: center; }
+header .toggle-history { line-height: 18px; width: 18px; text-align: center; }
+.pull-right { float: right; }
 footer {
    text-align: center;
    line-height: 60px;
 }
+body.mode-daily #mode-daily { background-color: black; color: white; }
+body.mode-practice #mode-practice { background-color: black; color: white; }
+
+/* Hide buttons that aren't visible in practice games */
+body.mode-practice #share-btn,
+body.mode-practice .toggle-history { display: none; } 
+
 body.show-settings #settings { display: block; }
 body.show-help #help { display: block; }
 body.show-history #history { display: block; }
@@ -301,6 +311,25 @@ input:checked + .slider:before {
 </style>
 <script type="text/javascript">
 
+   function getQueryStrings() {
+      var assoc  = {};
+      var decode = function (s) { return decodeURIComponent(s.replace(/\+/g, " ")); };
+      var queryString = location.search.substring(1);
+      var keyValues = queryString.split('&');
+
+      for(var i in keyValues) {
+         var key = keyValues[i].split('=');
+         if (key.length > 1) {
+            assoc[decode(key[0])] = decode(key[1]);
+         }
+      }
+
+      return assoc; 
+   }
+
+   var qs = getQueryStrings();
+   var mode = qs['mode'] ? qs['mode'] : 'daily';
+
    // I know I'm doing this wrong, but since I don't have any server-side stuff to kick the
    // emojis into the markup, I'm going to just do some document.writes to keep the HTML
    // as simple as I can... 
@@ -350,7 +379,8 @@ function getUTC() {
    return utc;
 }
 
-var seed = xmur3('' + getUTC());
+// When playing daily mode, everyone gets the same puzzle. In practice, keep it super random.
+var seed = (mode == 'daily') ? xmur3('' + getUTC()) : xmur3(Math.random() + getUTC());
 var rand = mulberry32(seed());
 
 </script>
@@ -359,13 +389,12 @@ var rand = mulberry32(seed());
    <div id="dialog-overlay"></div>
    <header>
       <h1>Codele</h1>
-      <a class="toggle-help"><svg width="25" height="25" version="1.1" viewBox="0 0 26.458 26.458" xmlns="http://www.w3.org/2000/svg">
-         <g transform="translate(-24.793 -16.473)" stroke-miterlimit="2" stroke-width="0">
-          <path d="m45.753 46.904c-0.61442 0-1.1091 0.51803-1.1091 1.1617v2.73c0 0.75896-1.5608 1.4025-2.0975 0.86582l-1.9286-1.9286c-0.45515-0.45514-1.1711-0.47166-1.6055-0.03722l-2.1655 2.1655c-0.43446 0.43445-0.41794 1.1504 0.03722 1.6055l1.9286 1.9286c0.53668 0.53666-0.10687 2.0974-0.86585 2.0974h-2.7301c-0.64368 0-1.1617 0.49464-1.1617 1.109v3.063c0 0.6144 0.51805 1.109 1.1617 1.109h2.7301c0.7587 0 1.4023 1.56 0.86585 2.0965l-1.9286 1.9286c-0.45515 0.45514-0.47168 1.171-0.03722 1.6055l2.1655 2.1655c0.43446 0.43445 1.1504 0.41793 1.6055-0.03721l1.9286-1.9286c0.53668-0.53666 2.0975 0.10687 2.0975 0.86582v2.73c0 0.64366 0.49466 1.1626 1.1091 1.1626h3.0631c0.61442 0 1.1082-0.51894 1.1082-1.1626v-2.73c0-0.75896 1.5608-1.4025 2.0975-0.86582l1.9286 1.9286c0.45515 0.45514 1.1711 0.47166 1.6055 0.03721l2.1655-2.1655c0.43446-0.43445 0.41794-1.1504-0.03722-1.6055l-1.9286-1.9286c-0.53648-0.53646 0.10715-2.0965 0.86585-2.0965h2.7301c0.64368 0 1.1617-0.49464 1.1617-1.109v-3.063c-4e-6 -0.6144-0.51805-1.109-1.1617-1.109h-2.7246c-0.76002 0-1.4069-1.5618-0.86948-2.0992l1.9268-1.9268c0.45515-0.45514 0.47168-1.171 0.03722-1.6055l-2.1655-2.1655c-0.43446-0.43445-1.1504-0.41792-1.6055 0.03722l-1.9268 1.9268c-0.53741 0.5374-2.0993-0.10947-2.0993-0.86945v-2.7245c0-0.64366-0.49376-1.1617-1.1082-1.1617zm6.4426 13.229a4.9115 4.9114 0 0 1-4.9115 4.9114 4.9115 4.9114 0 0 1-4.9115-4.9114 4.9115 4.9114 0 0 1 4.9115-4.9114 4.9115 4.9114 0 0 1 4.9115 4.9114z"/>
-          <path d="m38.022 16.473a13.229 13.229 0 0 0-13.229 13.229 13.229 13.229 0 0 0 13.229 13.229 13.229 13.229 0 0 0 13.229-13.229 13.229 13.229 0 0 0-13.229-13.229zm0.24468 3.4377c1.9224 0 3.4748 0.39801 4.6565 1.1948 1.605 1.077 2.4075 2.5133 2.4075 4.3084 0 0.74429-0.20742 1.4624-0.62189 2.1542s-1.2609 1.5367-2.5396 2.535c-0.89067 0.70051-1.4553 1.2653-1.6934 1.6944-0.22928 0.42031-0.34408 0.97164-0.34408 1.6546h-5.0266v-0.49904c0-0.84937 0.09706-1.5365 0.29106-2.0619 0.19401-0.53414 0.48075-1.0201 0.85994-1.4579 0.38802-0.43782 1.2522-1.2084 2.5926-2.3117 0.7143-0.57792 1.0715-1.1078 1.0715-1.5894 0-0.4816-0.14533-0.85365-0.43634-1.1163-0.28219-0.27145-0.71426-0.40729-1.2963-0.40729-0.62612 0-1.1464 0.20575-1.5608 0.6173-0.40565 0.41155-0.66578 1.1297-0.78042 2.1542l-5.1326-0.63056c0.17637-1.8739 0.8597-3.3801 2.0502-4.5184 1.1993-1.1471 3.0335-1.7204 5.5027-1.7204zm-3.3332 14.868h5.3839v4.7151h-5.3839z"/>
-         </g>
-         </svg></a>
-      <a class="toggle-history">📊</a>
+      <a class="btn" id="mode-daily" href=".">Daily</a>
+      <a class="btn" id="mode-practice" href="./?mode=practice">Practice</a>
+      <div class="pull-right">
+         <a class="btn toggle-history"><svg width="14" height="14" version="1.1" viewBox="0 0 75 75" xmlns="http://www.w3.org/2000/svg"><rect width="75" height="75" fill="none" style="paint-order:fill markers stroke"/><g transform="matrix(3.9099 0 0 3.9099 -692.07 -252.93)" fill="#fff"><rect x="177.01" y="70.115" width="5.0271" height="13.494" rx="0" ry="0" style="paint-order:fill markers stroke"/><rect x="184.08" y="74.153" width="5.0271" height="9.7204" rx="0" ry="0" style="paint-order:fill markers stroke"/><rect x="191.16" y="65.629" width="5.0271" height="18.244" rx="0" ry="0" style="paint-order:fill markers stroke"/></g></svg></a>
+         <a class="btn toggle-help">?</a>
+      </div>
    </header>
    <div id="game">
       <div id="board">
@@ -434,7 +463,7 @@ var rand = mulberry32(seed());
    </div>
 
    <div id="history" class="dialog">
-      <h2>HISTORY</h2>
+      <h2>Daily Stats</h2>
       <div id="history-content">
       </div>
       <a class="toggle-history btn btn-close">&times;</a>
@@ -448,6 +477,9 @@ var rand = mulberry32(seed());
    </div>
 
 <script type="text/javascript">
+
+// Add the current mode to the body's classname
+document.querySelector('body').classList.add('mode-' + mode);
 
 // Write the HTML for the board
 var html = '';
@@ -482,39 +514,43 @@ var game = [];
 
 drawSolution();
 
-// If we played this game before, we need to pull the game collection out of storage
-if (localStorage.getItem('seed') == getUTC()) {
-   
-   // Load game
+// Only the daily game is stored in localStorage
+if (mode == 'daily') {
 
-   game = JSON.parse(localStorage.getItem('game'));
+   // If we played this game before, we need to pull the game collection out of storage
+   if (localStorage.getItem('seed') == getUTC()) {
+      
+      // Load game
 
-   // Load each row of the game
-   for (var rowIdx = 0; rowIdx < game.length; rowIdx++) {
+      game = JSON.parse(localStorage.getItem('game'));
 
-      // Load each cell of the row
-      for (var cellIdx = 0; cellIdx < game[rowIdx].length; cellIdx++) {
+      // Load each row of the game
+      for (var rowIdx = 0; rowIdx < game.length; rowIdx++) {
 
-         var cellValue = game[rowIdx][cellIdx];
+         // Load each cell of the row
+         for (var cellIdx = 0; cellIdx < game[rowIdx].length; cellIdx++) {
 
-         var cell = document.querySelector('#cell-' + rowIdx + '-' + cellIdx);
-         cell.classList.add('value-' + cellValue);
-         cell.setAttribute('data-value', cellValue);
-         cell.innerHTML = colorBlindShapes[cellValue];
+            var cellValue = game[rowIdx][cellIdx];
+
+            var cell = document.querySelector('#cell-' + rowIdx + '-' + cellIdx);
+            cell.classList.add('value-' + cellValue);
+            cell.setAttribute('data-value', cellValue);
+            cell.innerHTML = colorBlindShapes[cellValue];
+         }
+
+         // Calculate the row's result
+         calculateResult(rowIdx, game[rowIdx]);
       }
 
-      // Calculate the row's result
-      calculateResult(rowIdx, game[rowIdx]);
+      // Resume the game where we left off ... 
+      activeRow = game.length;
    }
-
-   // Resume the game where we left off ... 
-   activeRow = game.length;
-}
-// Game isn't a continuation or replay, so clean house
-else {
-   localStorage.setItem('seed', getUTC());
-   localStorage.setItem('game', '[]');
-}
+   // Game isn't a continuation or replay, so clean house
+   else {
+      localStorage.setItem('seed', getUTC());
+      localStorage.setItem('game', '[]');
+   }
+} // /mode==daily
 
 function renderGame() {
    for (var i = 0; i < game.length; i++) {
@@ -654,23 +690,26 @@ function gameOver(message, isWinner, activeRow) {
 
    // Accumulate history if the stored lastFinishedGame isn't the current game,
    // meaning it's the first time the user finished it.
-   utc = getUTC();
-   if (localStorage.getItem('lastFinishedGame') != utc) {
+   if (mode == 'daily') {
 
-      localStorage.setItem('lastFinishedGame', utc);
+      utc = getUTC();
+      if (localStorage.getItem('lastFinishedGame') != utc) {
 
-      gameHistory = loadGameHistory();
+         localStorage.setItem('lastFinishedGame', utc);
 
-      if (isWinner) {
-         // Increment the turn the game was completed on
-         var n = '' + (activeRow + 1);
-         gameHistory[n] += 1;
-      } else {
-         gameHistory['losses'] += 1;
+         gameHistory = loadGameHistory();
+
+         if (isWinner) {
+            // Increment the turn the game was completed on
+            var n = '' + (activeRow + 1);
+            gameHistory[n] += 1;
+         } else {
+            gameHistory['losses'] += 1;
+         }
+
+         // Encode history and resave it
+         localStorage.setItem('gameHistory', JSON.stringify(gameHistory));
       }
-
-      // Encode history and resave it
-      localStorage.setItem('gameHistory', JSON.stringify(gameHistory));
    }
 }
 
@@ -902,7 +941,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#keyboard .cell'), funct
 
             // Before we show the result, we need to store the row
             game.push(rowValues);
-            localStorage.setItem('game', JSON.stringify(game));
+            if (mode == 'daily') {
+               localStorage.setItem('game', JSON.stringify(game));
+            }
 
             const [numCorrect, numPartlyCorrect] = calculateResult(activeRow, rowValues);
 
