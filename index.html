@@ -21,7 +21,8 @@ body {
    -moz-user-select: none;
    -ms-user-select: none;
    user-select: none;
-   width: 405px;
+   width: 100%;
+   max-width: 405px;
    height: 100%;
    padding: 0;
    margin: 0 auto;
@@ -44,19 +45,23 @@ body {
    overflow: auto;
 }
 .row {
-   clear: both;
-   overflow: auto;
+   display: flex;
+   justify-content: center;
+   gap: 5px;
+   margin-bottom: 5px;
 }
-.cell, .result {
-   float: left;
-   width: 40px;
+.cell {
+   flex: 0 0 40px;
    height: 42px;
    line-height: 42px;
    font-size: 30px;
    text-align: center;
    font-weight: bold;
-   margin: 5px;
    cursor: default;
+   border: 1px solid silver;
+   border-radius: 5px;
+   color: transparent;
+   user-select: none;
 }
 .result {
    width: 130px;
@@ -71,17 +76,25 @@ body {
 body.colorBlindMode .cell {
    color: white;
 }
-.cell {
-   border: 1px solid silver;
-   border-radius: 5px;
-   color: transparent;
-   user-select: none;
-}
 #keyboard {
    overflow: auto;
 }
+#keyboard .row {
+   display: flex;
+   justify-content: center;
+   gap: 5px;
+   flex-wrap: wrap;
+}
 #keyboard .cell {
+   flex: 0 0 40px;
+   height: 42px;
+   line-height: 42px;
+   font-size: 20px;
+   text-align: center;
+   font-weight: bold;
    cursor: pointer;
+   border: 1px solid silver;
+   border-radius: 5px;
 }
 #solution {
    display: none;
@@ -97,11 +110,11 @@ body.colorBlindMode .cell {
 .value-3 { background-color: #1982c4; }
 .value-4 { background-color: #6a4c93; }
 #enter {
-   width: 80px; 
+   min-width: 82px; 
 }
 header {
    position: relative;
-   padding: 10px 0;
+   padding: 10px 5px;
    text-align: left;
    overflow: auto;
 }
@@ -304,6 +317,11 @@ input:checked + .slider:before {
    padding-right: 2px;
    font-weight: bold;
 }
+
+/* Ensure confetti appears above all dialogs */
+canvas#confetti {
+   z-index: 10000 !important;
+}
 </style>
 <script type="text/javascript">
 
@@ -316,6 +334,7 @@ input:checked + .slider:before {
    var charWrong = '❌';
 
 </script>
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.0/dist/confetti.browser.min.js"></script>
 </head>
 <body>
    <div id="dialog-overlay"></div>
@@ -466,6 +485,101 @@ var numbersToWords = ['Zero', 'One', 'Two', 'Three', 'Four', 'Five'];
 
 var $body = document.querySelector('body');
 
+// Reliable storage system using IndexedDB with localStorage fallback
+var ReliableStorage = {
+   db: null,
+   dbName: 'CodeleDB',
+   version: 1,
+   
+   init: function() {
+      return new Promise((resolve, reject) => {
+         if (!window.indexedDB) {
+            console.log('IndexedDB not supported, using localStorage fallback');
+            this.db = null;
+            resolve();
+            return;
+         }
+         
+         const request = indexedDB.open(this.dbName, this.version);
+         
+         request.onerror = () => {
+            console.log('IndexedDB error, using localStorage fallback');
+            this.db = null;
+            resolve();
+         };
+         
+         request.onsuccess = (event) => {
+            this.db = event.target.result;
+            resolve();
+         };
+         
+         request.onupgradeneeded = (event) => {
+            const db = event.target.result;
+            if (!db.objectStoreNames.contains('gameData')) {
+               db.createObjectStore('gameData');
+            }
+         };
+      });
+   },
+   
+   setItem: function(key, value) {
+      return new Promise((resolve, reject) => {
+         if (this.db) {
+            const transaction = this.db.transaction(['gameData'], 'readwrite');
+            const store = transaction.objectStore('gameData');
+            const request = store.put(value, key);
+            
+            request.onsuccess = () => resolve();
+            request.onerror = () => {
+               console.log('IndexedDB write failed, using localStorage');
+               localStorage.setItem(key, value);
+               resolve();
+            };
+         } else {
+            localStorage.setItem(key, value);
+            resolve();
+         }
+      });
+   },
+   
+   getItem: function(key) {
+      return new Promise((resolve, reject) => {
+         if (this.db) {
+            const transaction = this.db.transaction(['gameData'], 'readonly');
+            const store = transaction.objectStore('gameData');
+            const request = store.get(key);
+            
+            request.onsuccess = () => {
+               const result = request.result;
+               // If not found in IndexedDB, check localStorage as fallback
+               if (result === undefined) {
+                  const localValue = localStorage.getItem(key);
+                  if (localValue) {
+                     console.log('Not in IndexedDB, retrieved from localStorage:', key);
+                     // Migrate to IndexedDB for next time
+                     this.setItem(key, localValue);
+                  }
+                  resolve(localValue);
+               } else {
+                  resolve(result);
+               }
+            };
+            request.onerror = () => {
+               console.log('IndexedDB read failed, using localStorage');
+               resolve(localStorage.getItem(key));
+            };
+         } else {
+            resolve(localStorage.getItem(key));
+         }
+      });
+   }
+};
+
+// Initialize storage
+ReliableStorage.init().then(() => {
+   console.log('Storage initialized');
+});
+
 // This is a multi-dimensional array in which I store the user's answer.
 // Rendering the board is basically done by reading the contents of game[]
 // and updating the DOM elements.
@@ -495,25 +609,25 @@ function resetGame() {
    // Add the current mode to the body's classname
    document.querySelector('body').classList.add('mode-' + mode);
 
-   // Only the daily game is stored in localStorage
+   // Only the daily game is stored in reliable storage
    if (mode == 'daily') {
-
-      if (localStorage.getItem('seed') == getUTC()) {
-
-         // Load stored game
-         game = JSON.parse(localStorage.getItem('game'));
-
-         // Resume the game where we left off ... 
-         activeRow = game.length;
-      }
-      // Game isn't a continuation or replay, so clean house
-      else {
-         localStorage.setItem('seed', getUTC());
-         localStorage.setItem('game', '[]');
-      }
-   }
-   else
-   {
+      ReliableStorage.getItem('seed').then(storedSeed => {
+         if (storedSeed == getUTC()) {
+            // Load stored game
+            ReliableStorage.getItem('game').then(storedGame => {
+               if (storedGame) {
+                  game = JSON.parse(storedGame);
+                  // Resume the game where we left off
+                  activeRow = game.length;
+               }
+            });
+         } else {
+            // Game isn't a continuation or replay, so clean house
+            ReliableStorage.setItem('seed', getUTC());
+            ReliableStorage.setItem('game', '[]');
+         }
+      });
+   } else {
       game = [];
       activeRow = 0;
    }
@@ -550,8 +664,7 @@ function resetGame() {
       // Calculate the row's result
       if (rowPlayed) {
          calculateResult(rowIdx, game[rowIdx]);
-      }
-      else {
+      } else {
          var $result = document.querySelector('#result-' + rowIdx);
          $result.innerHTML = '';
          $result.removeAttribute('title');
@@ -692,87 +805,95 @@ function gameOver(message, isWinner, activeRow) {
    // Hide the keyboard, show the solution
    document.querySelector('#keyboard').style.display = 'none';
    document.querySelector('#solution').style.display = 'block';
+   
+   // Trigger confetti if user won
+   if (isWinner) {
+      triggerConfetti();
+   }
 
    // Accumulate history if the stored lastFinishedGame isn't the current game,
    // meaning it's the first time the user finished it.
    if (mode == 'daily') {
 
       utc = getUTC();
-      if (localStorage.getItem('lastFinishedGame') != utc) {
+      ReliableStorage.getItem('lastFinishedGame').then(lastFinished => {
+         if (lastFinished != utc) {
 
-         localStorage.setItem('lastFinishedGame', utc);
+            ReliableStorage.setItem('lastFinishedGame', utc);
 
-         gameHistory = loadGameHistory();
+            loadGameHistory().then(gameHistory => {
+               if (isWinner) {
+                  // Increment the turn the game was completed on
+                  var n = '' + (activeRow + 1);
+                  gameHistory[n] += 1;
+               } else {
+                  gameHistory['losses'] += 1;
+               }
 
-         if (isWinner) {
-            // Increment the turn the game was completed on
-            var n = '' + (activeRow + 1);
-            gameHistory[n] += 1;
-         } else {
-            gameHistory['losses'] += 1;
+               // Encode history and resave it
+               ReliableStorage.setItem('gameHistory', JSON.stringify(gameHistory));
+            });
          }
-
-         // Encode history and resave it
-         localStorage.setItem('gameHistory', JSON.stringify(gameHistory));
-      }
+      });
    }
 }
 
 function loadGameHistory() {
-   gameHistory = localStorage.getItem('gameHistory');
-   if (gameHistory == null) {
-      gameHistory = {
-           '1': 0
-         , '2': 0
-         , '3': 0
-         , '4': 0
-         , '5': 0
-         , '6': 0
-         , '7': 0
-         , '8': 0
-         , '9': 0
-         , '10': 0
-         , 'losses': 0
-      };
-   } else {
-      gameHistory = JSON.parse(gameHistory);
-      // Fix a bug where some people might not have 10 in their gameHistory dictionary
-      if (!('10' in gameHistory)) {
-         gameHistory['10'] = 0;
+   return ReliableStorage.getItem('gameHistory').then(storedHistory => {
+      if (storedHistory == null) {
+         gameHistory = {
+              '1': 0
+            , '2': 0
+            , '3': 0
+            , '4': 0
+            , '5': 0
+            , '6': 0
+            , '7': 0
+            , '8': 0
+            , '9': 0
+            , '10': 0
+            , 'losses': 0
+         };
+      } else {
+         gameHistory = JSON.parse(storedHistory);
+         // Fix a bug where some people might not have 10 in their gameHistory dictionary
+         if (!('10' in gameHistory)) {
+            gameHistory['10'] = 0;
+         }
       }
-   }
-   return gameHistory;
+      return gameHistory;
+   });
 }
 
 function showHistory() {
+   loadGameHistory().then(gameHistory => {
+      var html = '';
+      
+      // Find biggest count, and total count of games
+      var maxValue = 0;
+      var totalGames = 0;
+      for (key in gameHistory) {
+         maxValue = Math.max(maxValue, gameHistory[key]);
+         totalGames += gameHistory[key];
+      }
 
-   var gameHistory = loadGameHistory();
-   var html = '';
-   
-   // Find biggest count, and total count of games
-   var maxValue = 0;
-   var totalGames = 0;
-   for (key in gameHistory) {
-      maxValue = Math.max(maxValue, gameHistory[key]);
-      totalGames += gameHistory[key];
-   }
+      // Hack to prevent the bars from all going 100% when there are no records w/o a dumb 'if' statement in the html +=
+      maxValue = Math.max(maxValue, 1);
 
-   // Hack to prevent the bars from all going 100% when there are no records w/o a dumb 'if' statement in the html +=
-   maxValue = Math.max(maxValue, 1);
+      html += '<h4>Games Played: ' + totalGames + '</h4>'; 
 
-   html += '<h4>Games Played: ' + totalGames + '</h4>'; 
+      // Draw the bar chart
+      html += '<table>';
+      for (key in gameHistory) {
+         html += '<tr>';
+         html += '<th width="1%" align="center">' + key + '</th>';
+         html += '<td width="*"><div class="bar-value bar-value-' + key + '" style="width:' + ((gameHistory[key] / maxValue) * 100) + '%"><span>' + gameHistory[key] + '<span></div></td>';
+         html += '</tr>';
+      }
+      html += '</table>';
 
-   // Draw the bar chart
-   html += '<table>';
-   for (key in gameHistory) {
-      html += '<tr>';
-      html += '<th width="1%" align="center">' + key + '</th>';
-      html += '<td width="*"><div class="bar-value bar-value-' + key + '" style="width:' + ((gameHistory[key] / maxValue) * 100) + '%"><span>' + gameHistory[key] + '<span></div></td>';
-      html += '</tr>';
-   }
-   html += '</table>';
-
-   document.querySelector('#history-content').innerHTML = html;
+      document.querySelector('#history-content').innerHTML = html;
+   });
 }
 
 function showPostGameDialog(title) {
@@ -960,7 +1081,7 @@ Array.prototype.forEach.call(document.querySelectorAll('#keyboard .cell'), funct
             // Before we show the result, we need to store the row
             game.push(rowValues);
             if (mode == 'daily') {
-               localStorage.setItem('game', JSON.stringify(game));
+               ReliableStorage.setItem('game', JSON.stringify(game));
             }
 
             const [numCorrect, numPartlyCorrect] = calculateResult(activeRow, rowValues);
@@ -1012,6 +1133,31 @@ function setMode(newMode) {
    document.querySelector('body').classList.add('mode-' + mode);
 
    resetGame();
+}
+
+function triggerConfetti() {
+   // Trigger confetti animation for victory
+   confetti({
+      particleCount: 100,
+      spread: 70,
+      origin: { y: 0.6 }
+   });
+   
+   // Ensure the confetti canvas is above the modal
+   var canvas = document.querySelector('canvas');
+   if (canvas) {
+      canvas.style.zIndex = '10000';
+      canvas.style.position = 'fixed';
+   }
+   
+   // Add a secondary burst slightly delayed
+   setTimeout(function() {
+      confetti({
+         particleCount: 50,
+         spread: 100,
+         origin: { y: 0.6 }
+      });
+   }, 500);
 }
 </script>
 
