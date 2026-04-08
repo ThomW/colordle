@@ -472,19 +472,6 @@ for (var i = 0; i < 10; i++) {
 }
 document.querySelector('#board').innerHTML = html;
 
-// Run the game
-var mode = 'daily';
-
-var charCorrect = '&#11044;';
-var charPartlyCorrect = '&#11096;';
-
-var colorBlindShapes = ['&#9733;', '&clubs;', '&hearts;', '&diams;', '&spades;'];
-var colorBlindMode = localStorage.getItem("colorBlindMode") == '1';
-
-var numbersToWords = ['Zero', 'One', 'Two', 'Three', 'Four', 'Five'];
-
-var $body = document.querySelector('body');
-
 // Reliable storage system using IndexedDB with localStorage fallback
 var ReliableStorage = {
    db: null,
@@ -575,10 +562,35 @@ var ReliableStorage = {
    }
 };
 
-// Initialize storage
-ReliableStorage.init().then(() => {
+// Initialize storage and load saved settings before starting the game
+ReliableStorage.init().then(async () => {
    console.log('Storage initialized');
+
+   var storedColorBlindMode = await ReliableStorage.getItem('colorBlindMode');
+   colorBlindMode = (storedColorBlindMode == '1') ? '1' : '0';
+   setupColorBlindMode();
+
+   await resetGame();
+
+   var firstTimer = await ReliableStorage.getItem('firstTimer');
+   if (firstTimer == null) {
+      $body.classList.toggle('show-help');
+      ReliableStorage.setItem('firstTimer', '0');
+   }
 });
+
+// Run the game
+var mode = 'daily';
+
+var charCorrect = '&#11044;';
+var charPartlyCorrect = '&#11096;';
+
+var colorBlindShapes = ['&#9733;', '&clubs;', '&hearts;', '&diams;', '&spades;'];
+var colorBlindMode = '0';
+
+var numbersToWords = ['Zero', 'One', 'Two', 'Three', 'Four', 'Five'];
+
+var $body = document.querySelector('body');
 
 // This is a multi-dimensional array in which I store the user's answer.
 // Rendering the board is basically done by reading the contents of game[]
@@ -589,7 +601,7 @@ var rand = null;
 var answer = null;
 var activeRow = 0;
 
-function resetGame() {
+async function resetGame() {
 
    // When playing daily mode, everyone gets the same puzzle. In practice, keep it super random.
    var seed = (mode == 'daily') ? xmur3('' + getUTC()) : xmur3(Math.random() + getUTC());
@@ -611,22 +623,28 @@ function resetGame() {
 
    // Only the daily game is stored in reliable storage
    if (mode == 'daily') {
-      ReliableStorage.getItem('seed').then(storedSeed => {
-         if (storedSeed == getUTC()) {
-            // Load stored game
-            ReliableStorage.getItem('game').then(storedGame => {
-               if (storedGame) {
-                  game = JSON.parse(storedGame);
-                  // Resume the game where we left off
-                  activeRow = game.length;
-               }
-            });
-         } else {
-            // Game isn't a continuation or replay, so clean house
-            ReliableStorage.setItem('seed', getUTC());
-            ReliableStorage.setItem('game', '[]');
+      var storedSeed = await ReliableStorage.getItem('seed');
+      if (storedSeed == getUTC()) {
+         // Load stored game
+         var storedGame = await ReliableStorage.getItem('game');
+         if (storedGame) {
+            try {
+               game = JSON.parse(storedGame);
+               activeRow = game.length;
+            } catch (e) {
+               console.warn('Unable to parse saved game state, resetting game.', e);
+               game = [];
+               activeRow = 0;
+               ReliableStorage.setItem('game', '[]');
+            }
          }
-      });
+      } else {
+         // Game isn't a continuation or replay, so clean house
+         ReliableStorage.setItem('seed', getUTC());
+         ReliableStorage.setItem('game', '[]');
+         game = [];
+         activeRow = 0;
+      }
    } else {
       game = [];
       activeRow = 0;
@@ -672,14 +690,6 @@ function resetGame() {
    }
 }
 
-resetGame();
-
-var firstRun = localStorage.getItem('firstTimer') == null ? true : false;
-if (firstRun) {
-   $body.classList.toggle('show-help');
-   localStorage.setItem('firstTimer', '0');
-}
-
 function setupColorBlindMode() {
 
    if (colorBlindMode == '1') {
@@ -693,8 +703,6 @@ function setupColorBlindMode() {
       el.checked = (colorBlindMode == '1');
    });
 }
-
-setupColorBlindMode();
 
 // This is where what a user entered is compared to the solution and the results is calculated
 function calculateResult(activeRow, rowValues) {
@@ -856,6 +864,10 @@ function loadGameHistory() {
          };
       } else {
          gameHistory = JSON.parse(storedHistory);
+
+         console.log(gameHistory);
+         console.log(storedHistory);
+
          // Fix a bug where some people might not have 10 in their gameHistory dictionary
          if (!('10' in gameHistory)) {
             gameHistory['10'] = 0;
@@ -942,7 +954,7 @@ Array.prototype.forEach.call(document.querySelectorAll('.toggle-settings'), func
 Array.prototype.forEach.call(document.querySelectorAll('.toggle-colorblind-mode'), function(el, i) {
    el.addEventListener('click', function(e) {
       colorBlindMode = (colorBlindMode == '1' ? '0' : '1');
-      localStorage.setItem('colorBlindMode', colorBlindMode);
+      ReliableStorage.setItem('colorBlindMode', colorBlindMode);
       setupColorBlindMode();
    });
 });
